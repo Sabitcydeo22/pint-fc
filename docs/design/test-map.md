@@ -1,0 +1,89 @@
+# Test map
+
+Levels: **DB** database (embedded Postgres, roles + claims) · **U** unit (Vitest) · **API** route handlers (LocalAuth + embedded Postgres) · **E2E** Playwright (390 px and 320 px). Every title starts with its ID. Files: `tests/db`, `tests/unit`, `tests/api`, `tests/e2e`.
+
+## The 38 checks
+
+| ID | Level(s) | Test title |
+|---|---|---|
+| AC-1.1.1 | API + E2E | `AC-1.1.1 valid player signs in and lands on home signed in` |
+| AC-1.1.3 | API + E2E | `AC-1.1.3 wrong password gives one generic error and no session` |
+| AC-1.1.4 | API | `AC-1.1.4 unknown and archived emails get the same error and timing class as a wrong password` |
+| AC-1.6.1 | API + E2E | `AC-1.6.1 sign out clears this session and player endpoints return 401` |
+| AC-1.6.2 | API + E2E | `AC-1.6.2 sign out of all devices rejects both sessions` |
+| AC-1.6.3 | API + E2E | `AC-1.6.3 player-only endpoints return 401 without a session and pages redirect to sign-in` |
+| AC-1.6.4 | E2E | `AC-1.6.4 after sign out, back and reload show no private data` |
+| AC-2.1.1 | DB + API + E2E | `AC-2.1.1 home shows next non-cancelled match with opponent, venue and kickoff` |
+| AC-2.1.2 | DB | `AC-2.1.2 cancelled earliest match is skipped as next match` |
+| AC-2.1.3 | U + E2E | `AC-2.1.3 countdown ticks down every second` |
+| AC-2.1.4 | U + E2E | `AC-2.1.4 countdown at kickoff shows Kicked off and never goes negative` |
+| AC-2.1.5 | API + E2E | `AC-2.1.5 no upcoming matches shows the empty state` |
+| AC-2.1.6 | U | `AC-2.1.6 kickoff is shown in America/New_York with zone label across DST changes` |
+| AC-2.2.1 | DB + API | `AC-2.2.1 season record is computed from published league results` |
+| AC-2.2.2 | DB | `AC-2.2.2 unpublished result is excluded from the record` |
+| AC-2.2.3 | DB | `AC-2.2.3 friendly is excluded from the league record` |
+| AC-2.2.4 | API + E2E | `AC-2.2.4 no published results shows the record empty state` |
+| AC-2.3.1 | DB + API | `AC-2.3.1 latest five published results appear newest first` |
+| AC-2.3.2 | DB + API | `AC-2.3.2 unpublished result never appears in latest results` |
+| AC-2.4.1 | DB + E2E | `AC-2.4.1 mini table shows snapshot rows in position order` |
+| AC-2.4.2 | E2E | `AC-2.4.2 PINT FC row is highlighted with label and bar, not colour alone` |
+| AC-2.4.3 | E2E | `AC-2.4.3 mini table shows the snapshot date` |
+| AC-4.1.1 | DB + API + E2E | `AC-4.1.1 squad lists active visible players grouped by position` |
+| AC-4.1.2 | DB + API + E2E | `AC-4.1.2 archived player never appears and their profile is 404` |
+| AC-4.1.3 | DB + API | `AC-4.1.3 minor appears only with guardian consent and opt-in` |
+| AC-4.2.1 | API + E2E | `AC-4.2.1 profile shows name, position and number` |
+| AC-4.2.2 | DB + API + E2E | `AC-4.2.2 photo, nationality and stats appear only when consented` |
+| AC-4.3.1 | DB + API + E2E | `AC-4.3.1 no public response contains email, phone, date of birth or RSVP` |
+| AC-4.3.2 | API + E2E | `AC-4.3.2 changing a consent is saved and reflected publicly on next request` |
+| AC-4.3.3 | DB + API | `AC-4.3.3 minor without guardian consent cannot opt in` |
+| AC-4.3.4 | DB + API | `AC-4.3.4 player cannot change another player's settings` |
+| AC-3.3.1 | DB + API + E2E | `AC-3.3.1 player saves Going, Maybe or Not going before cutoff` |
+| AC-3.3.2 | DB + API | `AC-3.3.2 changing an answer before cutoff replaces it` |
+| AC-3.3.4 | DB + API + E2E | `AC-3.3.4 answers after cutoff are rejected and the UI shows RSVP closed` |
+| AC-3.3.5 | U + E2E | `AC-3.3.5 page switches to RSVP closed at server cutoff without reload` |
+| AC-3.3.6 | DB + API | `AC-3.3.6 cancelled or past match and answering for someone else are rejected` |
+| AC-3.4.1 | DB + API + E2E | `AC-3.4.1 event page shows counts and attendance list to signed-in players` |
+| AC-3.4.3 | DB + API + E2E | `AC-3.4.3 teammates' answers are visible without reasons` |
+
+Counted: 7 + 15 + 9 + 7 = **38**.
+
+## Gates and cross-cutting
+| ID | Level | Test title |
+|---|---|---|
+| AC-5.2 | E2E (axe) | `AC-5.2 every page meets WCAG AA contrast` (one per page × state) |
+| AC-5.4 | E2E | `AC-5.4 no horizontal scroll at 320 px` (one per page) |
+| LIVE-1 | E2E | `LIVE-1 an answer by player A shows on player B's open event page within 15 seconds` |
+| RULE-1 | U + DB | `RULE-1 TypeScript and SQL cutoff agree on every case (parity)` |
+| RULE-2 | U | `RULE-2 DST: cutoff and display around 14 Mar 2027, 7 Nov 2027 and 1 Nov 2026` |
+| RULE-3 | U | `RULE-3 cutoff boundary: closed at exactly kickoff minus 2 h, open 1 ms before` |
+| SEED-1 | DB | `SEED-1 seed yields the specified counts and is idempotent` |
+| SEED-2 | DB | `SEED-2 demo match cutoff is relative to now and re-runnable` |
+| MATRIX-1 | DB | `MATRIX-1 every role × object × operation in the access matrix behaves as listed` |
+| MATRIX-2 | DB | `MATRIX-2 every table, view and function appears in the matrix` |
+
+## Threat tests (title starts with the threat ID)
+| Threat | Level | Title |
+|---|---|---|
+| T-01 | DB (+smoke) | `T-01 anon cannot read any core table` |
+| T-02 | DB | `T-02 no view or function exposes email, phone or date of birth to others` |
+| T-03 | DB | `T-03 direct rpc_rsvp_set after cutoff is rejected` |
+| T-04 | DB + API | `T-04 cannot write an RSVP for another player` |
+| T-05 | DB + API | `T-05 other players' reasons are never returned` |
+| T-06 | DB + API | `T-06 player cannot change status, guardian consent or number` |
+| T-07 | API + smoke | `T-07 revoked session token is rejected by API and database` |
+| T-08 | API | `T-08 sign-in errors and timing do not reveal accounts` |
+| T-10 | API + E2E | `T-10 hidden and archived players return an identical 404` |
+| T-11 | DB | `T-11 unpublished results and cancelled matches never leak` |
+| T-12 | API + E2E | `T-12 visitor never receives RSVP data` |
+| T-13 | U | `T-13 client bundle contains no service key or database URL` |
+| T-14 | U | `T-14 secret scanner finds no token patterns in tracked files` |
+| T-15 | E2E | `T-15 script in a player name or reason is rendered as text` |
+| T-16 | API | `T-16 state-changing routes reject cross-origin and non-JSON requests` |
+| T-17 | E2E | `T-17 wrong device clock does not change RSVP open/closed` |
+| T-18 | U | `T-18 no string-built SQL in src` |
+| T-19 | E2E | `T-19 sign-in ignores redirect parameters` |
+| T-22 | DB | `T-22 rpc_rsvp_set rejects cancelled and past matches` |
+| T-23 | API | `T-23 oversized or unknown fields are rejected` |
+
+## Smoke (needs the real Supabase project; owner's yes first)
+`SMOKE-1` real sign-in and sign-out-all · `SMOKE-2` `/rest/v1/` with anon key lists only allowed views and functions · `SMOKE-3` RSVP round trip with a test player · `SMOKE-4` `core` unreachable from REST.
