@@ -37,7 +37,12 @@ export const CORE_TABLES = [
   'venues',
 ] as const;
 
-export const CORE_FUNCTIONS = ['core.is_minor(date)', 'core.players_guard()'] as const;
+export const CORE_FUNCTIONS = [
+  'core.is_minor(date)',
+  'core.players_guard()',
+  'core.rsvp_cutoff(timestamptz)', // session 03
+  'core.rsvp_is_open(timestamptz,timestamptz,core.match_status)', // session 03
+] as const;
 
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];
 const OWNER_ROLES: Role[] = ['service_role', 'postgres'];
