@@ -37,3 +37,8 @@ One line each: decision — reason. "(proposed)" = owner may veto at approval.
 - D-31 Plan: 19 sessions, one layer or feature each; a check is "owned" by the session that finishes ALL its tests; earlier sessions may add API-level tests tagged `[api]` for it. Tests are tagged `[db]`, `[api]`, `[unit]`, `[e2e]` after the ID so one ID can have several tests across sessions.
 - D-32 Every install (npm package or tool) needs the owner's yes first (owner answer Q10); session 01 lists them in one batch for a single approval.
 - D-33 Live-in-class session is 16 (AC-2.4.3, snapshot date on the mini table): tiny, visible, safe to do in front of students.
+- D-34 DB tests share ONE Postgres per run: Vitest globalSetup builds a migrated template database, each test file copies it — each run leaves one ~39 MB temp folder instead of one per file (files may not be deleted). Owner approved touching `tests/helpers/db-global-setup.ts` and `vitest.db.config.ts` in session 02.
+- D-35 `players.id` has no foreign key to `auth.users` — the seed creates players with fixed ids first and creates the logins after with the same ids.
+- D-36 The minor opt-in rule (AC-4.3.3) is a trigger raising SQLSTATE `PF422`, not a CHECK: it depends on today's date. The column default `public_opt_in = true` cannot know the age, so the seed sets minors' value explicitly.
+- D-37 The auth stub copies Supabase's default privileges for `public` on purpose; migration 0001 then revokes them, so tests prove the lock-down on a Supabase-like starting point.
+- D-38 service_role gets explicit grants on `core` (not only default privileges) so it does not depend on a real project's defaults.
