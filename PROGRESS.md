@@ -81,3 +81,36 @@
 - Shared case table: `tests/unit/cutoff-cases.ts` (`CUTOFF_CASES`). Add new cutoff cases there so TypeScript and SQL stay in parity.
 - Routes MUST be wrapped by `withApi` in session 05 (request id, `toErrorResponse`, no-store, Origin and JSON checks); it is not built yet.
 - SQL: `core.rsvp_cutoff(timestamptz)`, `core.rsvp_is_open(now, kickoff, core.match_status)`; `public` functions added later can call them (owner-executed). Any new table, view or function still needs matrix rows (`tests/db/matrix.ts`).
+
+## session-04 — seed-data (2026-11-12)
+
+**Done**
+- `scripts/seed.mjs` (the seed and its command line), `scripts/seed-data/index.mjs` (ids, invented names, teams, venues, players, scores, standings) and `scripts/seed-data/stat-lines.mjs`.
+- 5 new tests: SEED-1 and SEED-2 in `tests/db/seed.test.ts`; SEED-3, SEED-4 and SEED-5 in `tests/unit/seed-fake.test.ts`.
+- No installs, no new files outside the plan's list, no change to any existing file other than `PROGRESS.md`.
+
+**What the seed creates** (all fake): 1 current season, 2 competitions (league, friendly), 3 venues, 8 teams (1 ours), 41 players (40 active: GK 4, DEF 14, MID 14, FWD 8; plus 1 archived), 17 matches (12 played in the past: 11 league + 1 friendly; 5 upcoming: the demo match, 3 more scheduled, 1 cancelled), 12 results (10 published league + 1 published friendly + 1 saved but unpublished), stat lines for the 11 published results (14 players each, goals add up), 1 standings snapshot with 8 rows, 8 weekly trainings, 0 RSVPs. Visible to the public: 37 of the 40 active players (2 adults opted out, 1 minor without guardian consent); minor A has guardian consent and is opted in.
+
+**Proof**
+- RED first, with skeleton modules returning empty values: 5 tests failed with AssertionError (for example `expected [] to have a length of 41 but got +0`, `expected +0 to be 5400000`, `expected +0 to be 1`).
+- GREEN: `tests/db/seed.test.ts` 2 passed; `tests/unit/seed-fake.test.ts` 3 passed.
+- Mutation check: moving the demo kickoff 1 hour earlier, and making training ids change on every run (duplicates on rerun), made SEED-2 fail (off by exactly 3,600,000 ms) and SEED-1 fail on the idempotency comparison; both mutations were removed.
+- Command line: unknown flag, a remote URL without `--allow-remote`, a bad duration and a missing database all refuse with exit 1 and never print the URL or password.
+- Exit gate output is in the session transcript.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it — the owner decides)
+- D-47 The seed refuses any database that is not on this computer unless `--allow-remote` is passed, and never prints the connection string — an accidental run against the real project must be impossible by default.
+- D-48 The demo match is the NEXT match: kickoff = now + the flag + 2 h, so its cutoff lands exactly the flag from now; the four regular upcoming matches come after it, one week apart at the same local time, the first of them cancelled.
+- D-49 Dates are relative to "now": past matches are 3 + 7k days back at 19:00 club time, the season spans 120 days back to 240 days ahead, minors are 16 y 3 m and 15 y 8 m old today. The seed is valid whenever it is run, but past dates shift each run (same ids, updated rows).
+- D-50 The seed only inserts or updates; it never deletes. Moving the demo match is a rerun with a new `--demo-cutoff-in`.
+- D-51 Names are invented words (14 first names x 12 surnames, 41 distinct full names), checked against a deny-list of common real names; emails are `first.last@pintfc.test`, phones `+1-555-01xx` (about one in five has none).
+- D-52 Id scheme: `TTTTTTTT-0000-4000-8000-NNNNNNNNNNNN`; type 1 player, 2 team, 3 venue, 4 season, 5 competition, 6 match, 7 training, 8 snapshot; matches 1..12 are past, 100 is the demo match, 101..104 are the regular upcoming ones.
+- D-53 The seed's `.mjs` files have no type declarations; tests import them with a typed `import * as` and a `@ts-expect-error TS7016` comment, so no `.d.ts` file (outside this session's list) was needed.
+
+**Next session needs to know**
+- Run locally: `node scripts/seed.mjs --database-url <local url> [--demo-cutoff-in 90m]` (or set `DATABASE_URL`). In code: `import { seed, DEMO_MATCH_ID } from '../../scripts/seed.mjs'` then `await seed(connectedPgClient, { now?, demoCutoffInMs? })` (owner role); it returns row counts. `parseDuration` and `assertSafeTarget` are exported too. Session 05 can call `seed()` from its tests (the db tests use `createTestDb()`, then a `pg.Client` on `db.url`).
+- Ids: `id(kind, n)` from `scripts/seed-data/index.mjs` (see D-52). Player n is `id('player', n)`; players are numbered 1..41 (41 is the archived one). Minor A is player 21 (guardian consent, opted in), minor B is player 34 (neither); adults who opted out are players 10 and 28. These are the ids session 05 must use when it creates the logins (players.id = auth user id).
+- The fake-name lists are `FIRST_NAMES` and `LAST_NAMES` in `scripts/seed-data/index.mjs`. Player emails are `first.last@pintfc.test`. No passwords exist yet: session 05 generates them and writes `credentials.local.csv` (gitignored), never printed.
+- The demo-match flag is `--demo-cutoff-in` (`90m`, `2h`, `45s`, `1d`); `--now <iso>` pretends it is another moment; `--allow-remote` is only for a non-local database and needs the owner's yes.
+- Counts and shape: see "What the seed creates". Public views in later sessions can rely on 37 visible players, 11 published results, 1 unpublished result, and the demo match being the next match.
+- Each `npm run test:db` run still leaves two temp Postgres folders (`pintfc-pg-*`); the owner may delete them.
