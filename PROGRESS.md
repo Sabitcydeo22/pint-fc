@@ -349,3 +349,41 @@
 - A new page with `loading.tsx` that must send a real 404 needs the check in a LAYOUT, as `players/[id]/layout.tsx` does (D-89).
 - `v_squad` is auto-updatable (plain single-table view): never grant it anything but `select`. The matrix and SQUAD-VIEWS-1 both guard that.
 - Missing `public/img/placeholder-player.svg`: a broken image for consented photos until a later session adds the file.
+
+## session-11 — privacy-settings (2026-11-12)
+
+**Done**
+- `supabase/migrations/0008_my_settings.sql`: `public.rpc_my_settings()` (own four flags, `is_minor`, `guardian_consent`, own email) and `public.rpc_update_my_settings(p_public_opt_in, p_show_photo, p_show_nationality, p_show_stats)`. Both SECURITY DEFINER, empty `search_path`, start with `core.require_player()`, EXECUTE only for `authenticated` (not anon, not PUBLIC). Neither takes a player id; the update has parameters for the four flags only. An omitted flag (NULL) is left alone; no flag at all is `22023`; a minor without guardian consent asking for `public_opt_in = true` is `PF422` before any write (the whole call is refused).
+- `src/server/settings.ts` (`getMySettings`, `updateMySettings`), `GET` and `PUT /api/me/settings` (`PUT` uses the existing strict `settingsSchema`: unknown keys such as `player_id`, `status`, `guardian_consent` are a 400).
+- `/settings` page: `page.tsx` (server, redirects to `/sign-in` without a session), `data.ts`, `SettingsForm.tsx` (client; each toggle saves on change, flips at once and is put back if the server refuses; `settings-saved` `role="status"`, `settings-error`, `minor-note` and a disabled `toggle-public` for a minor without consent; 44 px rows).
+- Tests: `tests/db/settings.test.ts` (10), `tests/api/settings.test.ts` (8), `tests/e2e/settings.spec.ts` (4). Owner-approved edit outside the plan's file list: `tests/db/matrix.ts` (two `PUBLIC_FUNCTIONS` rows).
+
+**Proof**
+- RED first (placeholder migration `select 1;`, a route answering 404, no toggles on the page): db 9 of 9 failed (`expected { code: '42883' … } to be null`, `function public.rpc_my_settings() does not exist`); api 8 of 8 failed (`expected 404 to be 200/401/400`); e2e 4 of 4 failed (`element(s) not found` for `toggle-stats`). One API test first failed with a TypeError on the empty body; I added a status assertion before the read so it fails on an assertion.
+- Mistakes of mine found while going green: a joined view refuses a write with `55000`, not `42501` (the db test accepts either and re-reads the row); `proconfig` text is backslash-escaped; Playwright's `check()` needs the box to flip at once, so the toggle became optimistic; a whole-page text check cannot prove a player is absent from the squad when the signed-in header shows their own name (now checks the squad cards only).
+- Exit gate, each on its own, exit 0: `test:db -- tests/db/settings.test.ts` 9 passed; `test:api -- tests/api/settings.test.ts` 8 passed; `test:e2e -- tests/e2e/settings.spec.ts` 4 passed; `npm run gate` ALL 7 GATES PASSED (typecheck, lint with no warnings, unit 21, db 56, api 43, e2e 37, plan:check OK). Gate was re-run after the last edit (db count is 56 and `test:db -- tests/db/settings.test.ts` is 10 passed since the M2 test was added).
+- Security mutation check (each on its own, files restored; SHA-256 of the three mutated files equal to the snapshot after the run):
+  - M1 update without "where own row" (every player updated): CAUGHT (4 db tests, incl. AC-4.3.4).
+  - M2 the function's own minor check removed: FIRST RUN SURVIVED (9 of 9 pass), because the `players_guard` trigger (0001) raises the same `PF422` for the same state. Fixed after the owner's OK with a tenth db test, `AC-4.3.3 [db] the function refuses a minor without consent even with the players_guard trigger switched off` (it switches the trigger off, proves it is off by creating the forbidden state as owner and undoing it, calls the function, expects `PF422` and no write, and always switches the trigger back on in `finally`). Re-run with M2 applied: CAUGHT (db 1 failed | 9 passed, `expected undefined to be 'PF422'`). `0008_my_settings.sql` restored through the Edit tool; SHA-256 equal to the value taken before the mutation (`E411D6CE…81048`), no `MUTATION` marker left.
+  - M3 anon may execute the update function: CAUGHT (SETTINGS-READ-2, SETTINGS-GRANT-1; the matrix would too).
+  - M4 `rpc_my_settings` uses `auth.uid()` instead of `core.require_player()`: CAUGHT (SETTINGS-READ-2).
+  - M5 `is_minor` always false in the DTO: CAUGHT (SETTINGS-READ-1).
+  - M6 `show_stats` never written: CAUGHT (AC-4.3.2 [db]).
+  - M7 PUT body not strict (unknown keys ignored): CAUGHT (AC-4.3.4, T-06, SETTINGS-PUT-1 [api]).
+  - M8 API swaps `show_photo` and `show_nationality`: CAUGHT (AC-4.3.2, AC-4.3.4 [api]).
+- Known gaps: (1) NOTHING tests the page's minor behaviour (`minor-note`, disabled `toggle-public`): the e2e server only creates logins for players 1, 2, 3 and 41, all adults. The owner decided NOT to touch `tests/helpers/e2e-server.mjs` or `tests/e2e/helpers.ts`, so this stays a known gap (a later session may add logins for players 21 and 34 and a minor e2e test). (2) ~~M2~~ closed: see M2 above. (3) `PUT` validation of `public_opt_in: null` etc. is covered, but the 8 KB limit is not re-tested here (covered by `with-api.test.ts`). (4) The settings page does not yet show the sign-out buttons the screen design lists (`sign-out-button`, `sign-out-all-button`); the header already has them.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it: the owner decides)
+- D-91 The settings functions take no player id and the update function has parameters for the four flags only: there is nothing to point at another player, and status, guardian consent, shirt number, name, email and date of birth cannot even be named (T-06, AC-4.3.4). Enforced by the database; the API's strict body is a convenience.
+- D-92 NULL means "leave this flag"; a call with no flag is `22023` (the API turns that into a 400 before it gets there). A rejected call (PF422) changes nothing, including flags sent with it.
+- D-93 `PUT /api/me/settings` returns the same `{ settings }` DTO as `GET`, so the page and the tests read the saved state from the response.
+- D-94 The page saves each toggle on change (no Save button), shows the change at once and puts it back on failure.
+- D-95 (owner-accepted) `/settings` does NOT show `sign-out-button` / `sign-out-all-button` although `docs/design/screens.md` lists them: the header's account menu already has both, and a second copy would need its own tests. The screen design is not updated here.
+- D-96 (owner-accepted) The function's own minor check is kept alongside the `players_guard` trigger (defence in depth) and is tested on its own with the trigger switched off.
+
+**Next session needs to know**
+- Settings DTO (`GET`/`PUT /api/me/settings` return `{ settings }`): `{ public_opt_in, show_photo, show_nationality, show_stats, is_minor, guardian_consent, email }`, all booleans except `email`. `PUT` body: any of the first four (booleans, at least one, nothing else). Errors: 401 `UNAUTHENTICATED`, 400 `VALIDATION`, 422 `MINOR_NEEDS_GUARDIAN`.
+- Signing in as the two minors: the API tests call `createLogins(client, { playerIds: [playerId(21), playerId(34)] })` from `scripts/seed.mjs` in `beforeAll` and then sign in through the real sign-in route (`tests/api/settings.test.ts`); passwords stay in memory. Player 21 is minor A (consent, opted in), 34 is minor B (no consent, hidden). The e2e server only has logins for 1, 2, 3, 41; to e2e-test a minor, add 21 and 34 to `LOGIN_PLAYERS` in `tests/helpers/e2e-server.mjs` and to `Who` in `tests/e2e/helpers.ts` (not done: off this plan's list).
+- The e2e database is shared and not reset between specs: a test that changes a player's settings must change them back (the settings specs do).
+- A new public function must be added to `PUBLIC_FUNCTIONS` in `tests/db/matrix.ts` with its full argument list (`public.rpc_update_my_settings(boolean,boolean,boolean,boolean)`).
+- Process note: I edited one test file with a one-off `node -e` string replace (tests/api/settings.test.ts, removing a leftover test) instead of the Edit tool; the mutation script was written with the Write tool to the scratchpad, not the repo.
