@@ -45,6 +45,17 @@ export const CORE_FUNCTIONS = [
   'core.require_player()', // session 05
 ] as const;
 
+/**
+ * The ONLY core function that visitors and players may execute (session 10). Postgres checks EXECUTE on a function
+ * used inside a view against the CALLER, so the public views cannot call `core.is_publicly_visible` unless the
+ * callers hold EXECUTE. It is a SECURITY DEFINER predicate with an empty search_path that reads only its argument
+ * and no table (tests/db/squad.test.ts VIS-FN-2 checks all of that). Every other core function stays closed
+ * (CORE_FUNCTIONS above, and VIS-FN-3 checks every function in the schema). Keep this list at exactly one name.
+ */
+export const CORE_FUNCTIONS_OPEN_TO_VIEWS = [
+  'core.is_publicly_visible(core.players)', // session 10
+] as const;
+
 /** Functions in `public` (the REST surface): who may execute them. Added by session 05 and later. */
 export const PUBLIC_FUNCTIONS: { object: string; allow: Role[] }[] = [
   { object: 'public.rpc_me()', allow: ['authenticated', 'service_role', 'postgres'] }, // session 05
@@ -56,6 +67,8 @@ export const PUBLIC_VIEWS = [
   'public.v_season_record', // session 08
   'public.v_latest_results', // session 08
   'public.v_standings', // session 09
+  'public.v_squad', // session 10
+  'public.v_player_profile', // session 10
 ] as const;
 
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];
@@ -84,6 +97,10 @@ export const MATRIX: MatrixRow[] = [
     ...PUBLIC_ROLES.map((r) => row(r, f, 'function', 'execute', 'deny')),
     ...OWNER_ROLES.map((r) => row(r, f, 'function', 'execute', 'allow')),
   ]),
+  // the single core function the public views call: executable by everyone the views serve
+  ...CORE_FUNCTIONS_OPEN_TO_VIEWS.flatMap((f) =>
+    (['anon', 'authenticated', 'service_role', 'postgres'] as Role[]).map((r) => row(r, f, 'function', 'execute', 'allow')),
+  ),
   // public.rpc_* functions: only the listed roles may execute
   ...PUBLIC_FUNCTIONS.flatMap((f) =>
     (['anon', 'authenticated', 'service_role', 'postgres'] as Role[]).map((r) =>
