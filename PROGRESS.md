@@ -186,3 +186,38 @@
 - e2e sign-in: `import { signInThroughForm, loginFor, openMenuIfCollapsed, PHONE, SMALL_PHONE } from './helpers'`; `await signInThroughForm(page, 'one' | 'two' | 'other' | 'archived')`. The e2e database is shared by the whole run and never reset: tests that change data (RSVPs, settings) must undo it or use different players. At 390 px the header links are behind `nav-toggle`; call `openMenuIfCollapsed(page)` before clicking them.
 - Stubs: `/settings` and `/fixtures/[id]` (both only prove the redirect). Missing: `/squad`.
 - Each e2e run leaves one more `pintfc-pg-e2e-*` folder in the temp folder; the owner may delete them.
+
+## session-07 — home-next-match (2026-11-12)
+
+**Done**
+- `supabase/migrations/0004_v_next_match.sql`: `public.v_next_match` (columns `id, opponent, competition, venue, kickoff_at, cutoff_at, rsvp_open, server_now`; only `scheduled` matches that have not kicked off, earliest first, one row). `select` for anon, authenticated and service_role; no write privilege for anyone but the owner.
+- `src/server/home.ts` (`getHome()`, reads the view as role `anon`), `src/app/api/home/route.ts` (`GET /api/home`, through `withApi`), `src/components/NextMatch.tsx` (client; loading, error with retry, empty, card, live countdown, RSVP chip, link), `src/app/page.tsx` (h1 "PINT FC" kept, plus the section).
+- Tests: `tests/db/next-match.test.ts` (6: AC-2.1.1, AC-2.1.2, NEXT-MATCH-1..4), `tests/api/home.test.ts` (4: AC-2.1.1, AC-2.1.5, HOME-1, HOME-2), `tests/unit/countdown.test.ts` (2: AC-2.1.3, AC-2.1.4), `tests/e2e/home-next.spec.ts` (7: AC-2.1.1, 2.1.3, 2.1.4, 2.1.5, HOME-NEXT-1..3).
+- Owner-approved edits outside the plan's file list: `tests/db/matrix.ts` (new `PUBLIC_VIEWS` list and view rows) and `tests/unit/countdown.test.ts` (new).
+
+**Proof**
+- RED first, with skeleton modules (an empty placeholder migration, a `getHome()` returning `server_now: ''` and no match, a `countdownView` returning empty strings, a component rendering nothing): unit 2 of 2 failed (`expected { kickedOff: false, days: '', ... } to match object { ... days: '1' ...}`); db 5 of 5 failed (`relation "public.v_next_match" does not exist`, as an assertion `expected { code: '42P01' ... } to be null`); API 3 of 4 failed (`server_now is an ISO instant: expected false to be true`, `Cannot read properties of null`); e2e 7 of 7 failed (`element(s) not found` for `next-match-card`, `countdown`, `rsvp-status`, `next-match-empty`, `next-match-error`).
+- First GREEN attempts hit two real problems: (1) the view could not call `core.rsvp_cutoff` (`permission denied for function rsvp_cutoff`: Postgres checks EXECUTE on functions used inside a view against the CALLER), so the cutoff is written inline and a parity test (NEXT-MATCH-4) compares it with the core functions; (2) an update through the view answers 55000 (not updatable) rather than 42501, so the test accepts either and the access matrix is what proves the grants. Two test slips were also fixed (fractional hours in a fixture, an unneeded half-second assertion).
+- Exit gate, each command on its own, exit 0: `npm run test:db -- tests/db/next-match.test.ts` 6 passed; `npm run test:api -- tests/api/home.test.ts` 4 passed (shown once through a filter for log noise, and again unfiltered inside the full gate); `npm run test:e2e -- tests/e2e/home-next.spec.ts` 7 passed; `npm run gate` ALL 7 GATES PASSED (unit 21, db 26, api 22, e2e 16, plan:check OK).
+- Security mutation check (each on its own, restored byte for byte; SHA-256 and `fc /b` equal to the snapshots, no `MUTATION` marker left):
+  - M1 view also allows cancelled and played matches: CAUGHT (AC-2.1.2, NEXT-MATCH-1).
+  - M2 view also allows matches that already kicked off: CAUGHT (NEXT-MATCH-1, NEXT-MATCH-2).
+  - M3 `grant insert, update, delete` on the view to `anon`: CAUGHT only by the access matrix (MATRIX-1: `anon insert/update/delete public.v_next_match: expected deny, got allow`); NEXT-MATCH-3 alone does NOT catch it, because the view is not updatable anyway.
+  - M4 an extra internal column (`season_id`) leaks through the view: CAUGHT (NEXT-MATCH-3, exact column list).
+  - M5 the RSVP chip trusts the phone clock instead of the server-corrected clock: CAUGHT (HOME-NEXT-1).
+- Not covered by this session's mutation check: the API route has no security logic of its own (it reads as `anon`); that `anon` cannot read `core.*` directly is asserted in NEXT-MATCH-3 and the matrix but was not mutated.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it — the owner decides)
+- D-68 `public.v_next_match` computes the cutoff and `rsvp_open` inline (kickoff minus 2 h; scheduled and now before the cutoff) instead of calling `core.rsvp_cutoff` / `core.rsvp_is_open`: Postgres checks EXECUTE on functions inside a view against the caller, and `core.*` is closed to visitors on purpose. The parity test NEXT-MATCH-4 keeps the view and the core functions identical.
+- D-69 The view carries `rsvp_open` and `server_now` (the database clock) so the API never computes either; the match stays "next" after the cutoff (chip says "RSVP closed") until kickoff, then it is no longer returned.
+- D-70 The home next-match card is a client component that fetches `/api/home` on mount, so it has its own loading, error (retry, never raw text) and empty states; the page stays a server page with the h1.
+- D-71 The countdown and the RSVP chip use `createServerClock(server_now)`, taken once per response; a new response (retry) makes a new card with a new offset. The chip is open only if the server said open AND the corrected clock is strictly before the cutoff (at the cutoff: closed).
+- D-72 e2e tests freeze time with `page.clock.install` + `pauseAt` (device clock deliberately 4 h wrong) and answer `/api/home` with `page.route`, so they never depend on the shared e2e database or on how long the run has been going; only AC-2.1.1 uses the real seeded demo match.
+
+**Next session needs to know**
+- `GET /api/home` returns `{ server_now, next_match }` so far (`next_match` is `null` or `{ id, opponent, competition, venue, kickoff_at, cutoff_at, rsvp_open }`, all instants ISO `Z`). Sessions 08-09 add `record`, `latest_results`, `standings` to the SAME route and to `getHome()` in `src/server/home.ts` (one more view read each); the client type is `HomeData` from that file.
+- The home page is `src/app/page.tsx`: h1 "PINT FC" then `<NextMatch />`; later sections go below it as their own components, each with its own loading/empty/error state (each may fetch `/api/home` itself or share a loader).
+- New views: add the name to `PUBLIC_VIEWS` in `tests/db/matrix.ts` (matrix rows are generated), `revoke all ... from public, anon, authenticated, service_role; grant select ... to anon, authenticated, service_role;`, and remember a view cannot call `core.*` functions as a visitor (D-68).
+- e2e freezing time: copy `frozenHome()` from `tests/e2e/home-next.spec.ts` (`clock.install`, `clock.pauseAt` before `goto`, then `clock.runFor(ms)` to tick); answer `/api/home` with `page.route('**/api/home', ...)`.
+- Test ids on the card: `next-match-card`, `next-match-opponent`, `next-match-competition`, `next-match-venue`, `next-match-kickoff`, `countdown`, `countdown-d/h/m/s`, `rsvp-status`, `rsvp-cutoff`, `go-to-event`, `next-match-empty`, `next-match-loading`, `next-match-error`, `retry-button`.
+- `/fixtures/[id]` is still a stub (session 06); `go-to-event` already links to it.

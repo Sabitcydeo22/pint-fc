@@ -50,6 +50,11 @@ export const PUBLIC_FUNCTIONS: { object: string; allow: Role[] }[] = [
   { object: 'public.rpc_me()', allow: ['authenticated', 'service_role', 'postgres'] }, // session 05
 ];
 
+/** Views in `public` (the read surface for visitors and players). Added by session 07 and later. */
+export const PUBLIC_VIEWS = [
+  'public.v_next_match', // session 07
+] as const;
+
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];
 const OWNER_ROLES: Role[] = ['service_role', 'postgres'];
 const TABLE_OPS: Op[] = ['select', 'insert', 'update', 'delete'];
@@ -82,5 +87,12 @@ export const MATRIX: MatrixRow[] = [
       row(r, f.object, 'function', 'execute', f.allow.includes(r) ? 'allow' : 'deny'),
     ),
   ),
-  // public.v_* views: added by sessions 07 and later.
+  // public.v_* views (read-only for everyone who is not the owner): added by sessions 07 and later.
+  ...PUBLIC_VIEWS.flatMap((v) =>
+    (['anon', 'authenticated', 'service_role', 'postgres'] as Role[]).flatMap((r) => [
+      row(r, v, 'view', 'select', 'allow'),
+      // the owner role always holds every privilege on its own object; nobody else may write
+      ...(['insert', 'update', 'delete'] as Op[]).map((op) => row(r, v, 'view', op, r === 'postgres' ? 'allow' : 'deny')),
+    ]),
+  ),
 ];
