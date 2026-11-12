@@ -418,3 +418,46 @@
 - When you add a route or page: add it to `visitorCalls()` and the `API-INVENTORY` list (API test) or to `PAGES` and the `PAGE-INVENTORY` list (e2e spec); the inventory tests fail until you do. New `public` views and functions are covered automatically by the DB sweep. New RSVP-related views or functions for signed-in players (`rpc_attendance`, session 13 and later) must be executable by `authenticated` only: the DB sweep fails if anon can execute any `public` function.
 - Fake RSVP rows for a test: `insert into core.rsvps (match_id, player_id, answer, reason)` as owner, see `addRsvps` in `tests/db/pii.test.ts`.
 - The mutation snapshots are in `%TEMP%\pintfc-s12-snap` (copies of squad.ts, home.ts, privacy.ts, pii.test.ts); the owner may delete that folder. The e2e and db runs again left their usual `pintfc-pg-*` temp folders.
+
+## session-13 — rsvp-db-api (2026-11-12)
+
+**Done**
+- `supabase/migrations/0009_rsvp.sql`: `public.rpc_rsvp_set(p_match_id uuid, p_answer text, p_reason text default null)`.
+- `src/server/rsvp.ts` (`setMyRsvp`), `src/app/api/fixtures/[id]/rsvp/route.ts` (`PUT`, strict body via the existing `rsvpSchema`, no player id anywhere).
+- `tests/db/rsvp.test.ts` (8) and `tests/api/rsvp.test.ts` (8). Two lines of other files, with the owner's OK: one `PUBLIC_FUNCTIONS` row in `tests/db/matrix.ts`; the new route in `visitorCalls()` and the inventory list of `tests/api/public-pii.test.ts`. Nothing installed. `DECISIONS.md` NOT touched (not on the list).
+
+**Proof**
+- RED first (placeholder migration `select 1;`, a route answering 404): db 8 of 8 failed (`expected '42883' to be 'PF410'`, `function public.rpc_rsvp_set(unknown, unknown, unknown) does not exist` as an assertion on `error` being null); api 8 of 8 failed (`expected 404 to be 401/400/200`). No missing-module errors.
+- Exit gate, each on its own, exit 0: `test:db -- tests/db/rsvp.test.ts` 8 passed; `test:api -- tests/api/rsvp.test.ts` 8 passed; `npm run gate` ALL 7 GATES PASSED (typecheck, lint, unit 21, db 67, api 54, e2e 41, plan:check OK).
+- Security mutation check (each on its own; files restored with the Edit tool; SHA-256 of `0009_rsvp.sql`, `rsvp.ts`, `route.ts` equal to the snapshots taken before; no `MUTATION` marker left):
+  - **Run on the FINAL `0009_rsvp.sql`** (SHA-256 `7B2267D7…576107`; each applied alone, restored with the Edit tool, hash equal after each, 0 `MUTATION` markers left): M1, M2, M3, M8.
+  - M1 [FINAL] cutoff check `now() > cutoff` (the exact cutoff instant is accepted): CAUGHT, 1 failed | 7 passed (AC-3.3.4 [db]: `now == cutoff: expected null to be 'PF409'`).
+  - M2 [FINAL] status check removed (cancelled/played fall through to PF409): CAUGHT, 2 failed | 6 passed (T-22, AC-3.3.6: `expected 'PF409' to be 'PF410'`).
+  - M3 [FINAL] cutoff check removed: CAUGHT, 3 failed | 5 passed (AC-3.3.4, T-03, T-22: `expected undefined to be 'PF409'`).
+  - **Run on the migration BEFORE the kickoff check was added (M4 to M7; the lines they mutate are unchanged in the final file, but they were NOT re-run on it):**
+  - M4 player taken from `auth.uid()` instead of `core.require_player()`: CAUGHT (T-04, RSVP-GRANT-1).
+  - M5 `on conflict do nothing` (a changed answer is lost): CAUGHT (AC-3.3.1, AC-3.3.2, T-04).
+  - M6 old reason survives a new answer: CAUGHT (AC-3.3.2 [db]).
+  - M7 anon granted execute: CAUGHT (RSVP-GRANT-1).
+  - A1 route body not strict (`rsvpSchema.loose()`): CAUGHT (AC-3.3.6, T-04, RSVP-PUT-3 [api]).
+  - A2 response `me.reason` falls back to another player's reason: CAUGHT (AC-3.3.1, AC-3.3.2, RSVP-PUT-1 [api]).
+  - M8 [FINAL] the kickoff check `kickoff_at <= now()` removed: CAUGHT at both levels, db 1 failed | 7 passed (T-22), api 1 failed | 7 passed (AC-3.3.6).
+  - A1 and A2 changed `route.ts` / `rsvp.ts`, which have not changed since (their SHA-256 matched the snapshots), so they ran on the final versions of those files; the API tests only gained the `M_KICKED` match afterwards.
+  - Summary: on the final migration M1, M2, M3, M8 ran; M4, M5, M6, M7 ran on the earlier migration (not re-run); A1, A2 ran on the final route and server file.
+- Known gaps: (1) **The PUT response is NOT the full attendance body.** `docs/design/api.md` says it returns "the same body as attendance"; `GET /api/fixtures/{id}/attendance` does not exist yet, so the PUT returns the smaller `{ server_now, match: {id, cutoff_at, rsvp_open}, me: {answer, reason} }` (owner-approved). The full body (counts, attendees) arrives with the attendance endpoint; until then `api.md` and the code differ on purpose. (2) UNTESTED: the exact-cutoff and exact-kickoff boundaries are proved at db level only (frozen-clock tests); the API tests do not freeze the clock and use matches 96 h away, 1 h away, 1 h past, cancelled and played. (3) UNTESTED: a cancel racing a save. The function takes `for share` on the match row, which should make a concurrent cancel wait, but no test runs the two at once. (4) `rpc_rsvp_set` does not itself reject an archived player; `core.require_player()` does (PF401), and no test here covers an archived login (player 41 is covered by session 05 tests).
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it: the owner decides)
+- D-100 `rpc_rsvp_set(p_match_id uuid, p_answer text, p_reason text default null)` takes no player id; the player is `core.require_player()` (T-04). Returns one row: `match_id, cutoff_at, rsvp_open, server_now, answer, reason`; `answer`/`reason` are the caller's own, never anyone else's (T-05).
+- D-101 Rejection order and codes: not signed in `PF401`; bad answer or reason over 140 characters `22023` (the API turns these into 400 before it gets there); unknown match `PF404`; match not `scheduled` (cancelled or played) or already kicked off (`kickoff_at <= now()`) `PF410` MATCH_NOT_OPEN; between the cutoff and kickoff (`now >= cutoff`) `PF409` RSVP_CLOSED. Follows `docs/design/api.md` line 19 ("match cancelled, played or past"); "past" was ambiguous and the owner chose this reading. (First version of this session had kicked-off matches as `PF409`; changed after the owner's decision. RED for the change: T-22 failed with `expected 'PF409' to be 'PF410'`, then passed.)
+- D-102 Saving again replaces the answer AND the reason (an omitted or empty reason clears the old one); `created_at` stays, `updated_at` moves. An empty reason is stored as none.
+- D-103 (owner-approved) `PUT /api/fixtures/{id}/rsvp` returns `{ server_now, match: {id, cutoff_at, rsvp_open}, me: {answer, reason} }` until the attendance endpoint exists; the reason is only ever returned to its own author. Timestamps are ISO strings.
+- D-104 Tests freeze the database clock by creating the match inside the same transaction that calls the function, with `kickoff_at = now() + interval '...'` (Postgres `now()` does not move inside a transaction), and asserting two `now()` reads 50 ms apart are equal.
+
+**Next session needs to know**
+- Function: `public.rpc_rsvp_set(uuid, text, text)`, SECURITY DEFINER, `search_path=''`, executable by `authenticated` only. Matrix row key: `public.rpc_rsvp_set(uuid,text,text)`.
+- SQLSTATE mapping: `PF401` UNAUTHENTICATED (401), `PF404` NOT_FOUND (404), `PF409` RSVP_CLOSED (409: between cutoff and kickoff), `PF410` MATCH_NOT_OPEN (409: cancelled, played, or kickoff passed), `22023` bad input (the API validates first, so a 400 VALIDATION). Error mapping and `rsvpSchema` were already in `src/lib/errors.ts` / `src/lib/schemas.ts`.
+- Freezing time: see `frozenCall` in `tests/db/rsvp.test.ts` (own transaction via `db.ownerTx`, match inserted with `now() + interval`, then `set local role authenticated` and the claims). For API tests, insert matches with owner SQL relative to `now()` (see `tests/api/rsvp.test.ts`).
+- Fake RSVPs from a test: sign in through the real sign-in route and `PUT`, or insert into `core.rsvps` as owner.
+- Session 14 (UI): the PUT response has no counts or attendees yet; the page must call the attendance endpoint (or session 14 must add it) for those. The e2e database is shared: an e2e test that saves an RSVP must undo it, and the seed's matches decide whether the demo match is open.
+- New routes under `/api` must be added to the `API-INVENTORY` list in `tests/api/public-pii.test.ts` (done here for `fixtures/[id]/rsvp`).
+- Process note: all files were created and edited with Write/Edit; the mutation snapshots were SHA-256 hashes printed in the terminal (no copies on disk). The `npm run test:*` runs in the mutation loop were piped to `Select-String` only to shorten the output (not exit-gate runs).

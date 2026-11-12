@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PUT as putRsvp } from '../../src/app/api/fixtures/[id]/rsvp/route';
 import { GET as getHealth } from '../../src/app/api/health/route';
 import { GET as getHome } from '../../src/app/api/home/route';
 import { GET as getMe } from '../../src/app/api/me/route';
@@ -83,6 +84,7 @@ function visitorCalls(): Call[] {
     { name: 'GET /api/me (no session)', handler: getMe, method: 'GET', path: '/api/me' },
     { name: 'GET /api/me/settings (no session)', handler: getMySettings, method: 'GET', path: '/api/me/settings' },
     { name: 'PUT /api/me/settings (no session)', handler: putMySettings, method: 'PUT', path: '/api/me/settings', body: { public_opt_in: true } },
+    { name: 'PUT /api/fixtures/[id]/rsvp (no session)', handler: (r) => putRsvp(r, { params: Promise.resolve({ id: demoMatchId }) }), method: 'PUT', path: `/api/fixtures/${demoMatchId}/rsvp`, body: { answer: 'going' } },
     { name: 'POST /api/auth/sign-in (unknown email)', handler: postSignIn, method: 'POST', path: '/api/auth/sign-in', body: { email: 'nobody@pintfc.test', password: 'not-a-real-password' } },
     { name: 'POST /api/auth/sign-out (no session)', handler: postSignOut, method: 'POST', path: '/api/auth/sign-out', body: {} },
     { name: 'POST /api/auth/sign-out-all (no session)', handler: postSignOutAll, method: 'POST', path: '/api/auth/sign-out-all', body: {} },
@@ -171,7 +173,7 @@ describe('invariant 1 at the API', () => {
     };
     walk(root);
     expect(found.sort()).toEqual(
-      ['auth/sign-in', 'auth/sign-out', 'auth/sign-out-all', 'health', 'home', 'me', 'me/settings', 'players/[id]', 'squad'].sort(),
+      ['auth/sign-in', 'auth/sign-out', 'auth/sign-out-all', 'fixtures/[id]/rsvp', 'health', 'home', 'me', 'me/settings', 'players/[id]', 'squad'].sort(),
     );
   });
 });
