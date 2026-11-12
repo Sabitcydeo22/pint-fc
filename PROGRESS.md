@@ -151,3 +151,38 @@
 - Every new `public` function needs: `revoke all ... from public, anon; grant execute ... to authenticated;`, a start with `core.require_player()`, and rows in `tests/db/matrix.ts` (`PUBLIC_FUNCTIONS`). Views go in the matrix as `kind: 'view'`.
 - Session 18 must check on the real Supabase project: that the `postgres` role can read `auth.sessions` (needed by the security-definer `core.require_player()`), that access tokens carry the `session_id` claim, and that the Supabase adapter replaces LocalAuth (`AUTH_ADAPTER=supabase`).
 - Each `npm run test:db` and `npm run test:api` run leaves one shared temp Postgres folder (`pintfc-pg-*`, ~39 MB), plus one for the GATE-2 test; the owner may delete them.
+
+## session-06 — app-shell-sign-in (2026-11-12)
+
+**Done**
+- `src/app/globals.css` (tokens, header, footer, form styles), `src/app/layout.tsx` (header + page + footer, drawn per request), `src/components/Header.tsx` (client; menu button below 480 px, account menu with sign-out and sign-out-all), `src/components/Footer.tsx`.
+- `src/app/sign-in/`: `page.tsx`, `SignInForm.tsx`, `current-player.ts` (`getCurrentPlayer()`, the server-side "who is signed in", same AuthPort and `public.rpc_me()` as `GET /api/me`).
+- `src/middleware.ts`: private pages (`/settings`, `/fixtures/*`) with no cookie redirect to `/sign-in`; every page response is `Cache-Control: no-store`.
+- STUB pages: `src/app/settings/page.tsx` and `src/app/fixtures/[id]/page.tsx` (real redirect when signed out; almost no content). `/squad` does not exist yet (the header link leads to a 404 until a later session).
+- 8 e2e tests in `tests/e2e/auth.spec.ts`: AC-1.1.1, AC-1.1.3, AC-1.6.1, AC-1.6.2, AC-1.6.3, AC-1.6.4, T-19, SHELL-1.
+- Owner-approved edits outside the plan's file list: `playwright.config.ts` (web server = `node tests/helpers/e2e-server.mjs`, 390 px viewport, one worker), `tests/helpers/e2e-server.mjs` (new), `tests/e2e/helpers.ts` (new), the two stub pages.
+
+**Proof**
+- RED first (no UI existed): 8 of 8 failed with assertion errors (`expect(locator).toBeVisible() failed ... element(s) not found` for `page-sign-in` / `site-header`; `toHaveURL` received `/settings`).
+- First GREEN attempt: 5 passed, 3 failed. Cause 1 (test flaw): the tests looked at `page-home` before the sign-out page load finished; fixed with a `pressSignOut` helper. Cause 2 (real bug): sign-out answered 400 because an empty POST had no JSON content type; the client now sends `{}` as JSON.
+- Final: `npm run test:e2e -- tests/e2e/auth.spec.ts` 8 passed; `npm run gate` ALL 7 GATES PASSED (unit 19, db 20, api 18, e2e 9, plan:check OK). Exit codes 0.
+- Mutation check (each run on its own, then restored byte for byte; SHA-256 and `fc /b` against copies taken before mutating, no `MUTATION` marker left):
+  - Mutation 2, sign-out call sent to a wrong URL: CAUGHT. AC-1.6.1, AC-1.6.2 and AC-1.6.4 failed (`expect(getByTestId('account-menu')).toHaveCount(0)`, expected 0, received 1); the other 5 passed.
+  - Mutation 1, the middleware redirect for private pages disabled (`if (false && ...)`): SURVIVED, all 8 tests passed.
+- **Known gap:** the middleware's "no cookie, go to /sign-in" redirect is not covered by any test. The `/settings` and `/fixtures/[id]` pages also check the session and redirect on their own, so AC-1.6.3 stays green without the middleware layer. The page-level check is the real protection; the middleware one is only a shortcut. A later session could add a test that requests a private page with redirects off and checks that the middleware answered.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it — the owner decides)
+- D-62 The e2e server (`tests/helpers/e2e-server.mjs`) starts its own throwaway Postgres, applies the migrations, seeds, creates logins for players 1, 2, 3 and 41 and runs LocalAuth; passwords go only to `%TEMP%\pintfc-e2e-logins.json` (never printed) and the temp folders are left behind.
+- D-63 The layout reads the session on the server for every page (`force-dynamic`), so the header never flickers and never trusts the browser; every page is `no-store`.
+- D-64 `src/middleware.ts` only does the cheap cookie-present check; the page itself checks that the session is alive (so a revoked cookie is refused too). Next 16 calls this file "proxy" and warns that `middleware` is deprecated; the plan names `middleware.ts`, so it was kept. Renaming later is a one-line change.
+- D-65 Sign-in and sign-out finish with a full page load to `/` (never a client-side navigation), and sign-in never reads `next=`/`redirect=` (T-19).
+- D-66 The sign-in form shows one message, "Email or password is incorrect", for every 4xx; 5xx and network failure show "Something went wrong. Try again."
+- D-67 The settings stub shows the player's display name (`private-name`) instead of the email, because `public.rpc_me()` does not return the email.
+
+**Next session needs to know**
+- Components: `Header` (props `player: { displayName } | null`), `Footer`. Test ids: `site-header`, `nav-toggle`, `sign-in-link`, `account-menu`, `sign-out-button`, `sign-out-all-button`, `site-footer`, `page-sign-in`, `email-input`, `password-input`, `sign-in-button`, `sign-in-error`.
+- CSS variables (globals.css `:root`): `--ink --muted --primary --accent --bg --surface --ok --warn --bad --radius --gutter --max-width`. Classes: `.page`, `.btn`, `.btn-secondary`, `.card`, `.field`, `.form-error`, `.muted`.
+- Server pages: `import { getCurrentPlayer } from '../sign-in/current-player'` (returns `{ id, displayName }` or null); private page pattern: `if (!player) redirect('/sign-in')`. The layout already wraps pages in `<div className="page">`, so a page returns just `<main data-testid="page-...">`.
+- e2e sign-in: `import { signInThroughForm, loginFor, openMenuIfCollapsed, PHONE, SMALL_PHONE } from './helpers'`; `await signInThroughForm(page, 'one' | 'two' | 'other' | 'archived')`. The e2e database is shared by the whole run and never reset: tests that change data (RSVPs, settings) must undo it or use different players. At 390 px the header links are behind `nav-toggle`; call `openMenuIfCollapsed(page)` before clicking them.
+- Stubs: `/settings` and `/fixtures/[id]` (both only prove the redirect). Missing: `/squad`.
+- Each e2e run leaves one more `pintfc-pg-e2e-*` folder in the temp folder; the owner may delete them.

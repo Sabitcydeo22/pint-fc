@@ -7,13 +7,15 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   timeout: 60_000,
   fullyParallel: false,
+  workers: 1,
   reporter: [['list']],
-  use: { baseURL: `http://localhost:${PORT}`, trace: 'off' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  use: { baseURL: `http://localhost:${PORT}`, trace: 'off', viewport: { width: 390, height: 844 } },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } }],
+  // The script starts a throwaway Postgres, seeds it, creates logins, builds, then starts the app (see the file).
   webServer: {
-    command: `npm run build && npm run start -- -p ${PORT}`,
+    command: 'node tests/helpers/e2e-server.mjs',
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
-    timeout: 240_000,
+    timeout: 360_000,
   },
 });
