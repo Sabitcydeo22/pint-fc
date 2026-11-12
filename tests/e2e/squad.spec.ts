@@ -114,7 +114,10 @@ test('T-10 [e2e] hidden and archived players return an identical 404', async ({ 
     expect(await page.locator('body').innerText(), `${label}: the id is not shown`).not.toContain(id);
     const html = await page.content();
     for (const n of HIDDEN) expect(html.includes(byNumber(n).full_name), `${label} must not name player ${n}`).toBe(false);
-    pages.push(html.replaceAll(id, '<ID>'));
+    // Next prefetches /squad (header, footer and back links) and appends that route's chunk as a <script src> to <head>
+    // whenever the prefetch finishes, so a capture can land before or after it. Only those tags are removed; every
+    // other byte of the document is still compared.
+    pages.push(html.replaceAll(id, '<ID>').replace(/<script src="\/_next\/static\/chunks\/[^"]*"><\/script>/g, ''));
   }
   expect(new Set(texts).size, 'one and the same page for hidden, archived and unknown').toBe(1);
   // and the whole document is the same for a hidden, an archived and a never-existed player

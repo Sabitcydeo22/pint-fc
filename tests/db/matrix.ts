@@ -62,6 +62,7 @@ export const PUBLIC_FUNCTIONS: { object: string; allow: Role[] }[] = [
   { object: 'public.rpc_my_settings()', allow: ['authenticated', 'service_role', 'postgres'] }, // session 11
   { object: 'public.rpc_update_my_settings(boolean,boolean,boolean,boolean)', allow: ['authenticated', 'service_role', 'postgres'] }, // session 11
   { object: 'public.rpc_rsvp_set(uuid,text,text)', allow: ['authenticated', 'service_role', 'postgres'] }, // session 13
+  { object: 'public.rpc_attendance(uuid)', allow: ['authenticated', 'service_role', 'postgres'] }, // session 14
 ];
 
 /** Views in `public` (the read surface for visitors and players). Added by session 07 and later. */
