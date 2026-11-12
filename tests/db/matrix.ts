@@ -42,7 +42,13 @@ export const CORE_FUNCTIONS = [
   'core.players_guard()',
   'core.rsvp_cutoff(timestamptz)', // session 03
   'core.rsvp_is_open(timestamptz,timestamptz,core.match_status)', // session 03
+  'core.require_player()', // session 05
 ] as const;
+
+/** Functions in `public` (the REST surface): who may execute them. Added by session 05 and later. */
+export const PUBLIC_FUNCTIONS: { object: string; allow: Role[] }[] = [
+  { object: 'public.rpc_me()', allow: ['authenticated', 'service_role', 'postgres'] }, // session 05
+];
 
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];
 const OWNER_ROLES: Role[] = ['service_role', 'postgres'];
@@ -70,5 +76,11 @@ export const MATRIX: MatrixRow[] = [
     ...PUBLIC_ROLES.map((r) => row(r, f, 'function', 'execute', 'deny')),
     ...OWNER_ROLES.map((r) => row(r, f, 'function', 'execute', 'allow')),
   ]),
-  // public.v_* views and public.rpc_* functions: added by sessions 05 and later.
+  // public.rpc_* functions: only the listed roles may execute
+  ...PUBLIC_FUNCTIONS.flatMap((f) =>
+    (['anon', 'authenticated', 'service_role', 'postgres'] as Role[]).map((r) =>
+      row(r, f.object, 'function', 'execute', f.allow.includes(r) ? 'allow' : 'deny'),
+    ),
+  ),
+  // public.v_* views: added by sessions 07 and later.
 ];

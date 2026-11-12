@@ -7,11 +7,16 @@
 //   --database-url    default: the DATABASE_URL environment variable. It is NEVER printed.
 //   --allow-remote    required for any database that is not on this computer. Only with the owner's yes.
 //   --now             pretend "now" is this ISO instant (testing).
+//   --logins          also create a TEST-ONLY LocalAuth login for every player that has none, and append the
+//                     passwords to --credentials-file (default credentials.local.csv, gitignored). Passwords are
+//                     never printed. Existing logins are left alone. Local databases only.
 //
 // Re-running updates the same rows (deterministic ids, see seed-data/index.mjs); nothing is duplicated
 // and nothing is deleted. Moving the demo match = run it again with a new --demo-cutoff-in.
+import { appendFileSync, existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import pg from 'pg';
+import { ensureLocalAuthSchema, hashPassword, randomPassword } from '../src/server/auth/local-store.mjs';
 import {
   DEMO_MATCH_ID,
   FRIENDLY_SCORE,
@@ -199,6 +204,46 @@ export async function seed(client, { now = new Date(), demoCutoffInMs = 90 * 60_
 }
 
 // ---------------------------------------------------------------------------------------------
+// logins (session 05): one LocalAuth login per player, same id as the player
+// ---------------------------------------------------------------------------------------------
+/**
+ * Creates a LocalAuth login for every seeded player that has none yet (or only for `playerIds`).
+ * LocalAuth is the TEST-ONLY stand-in for Supabase Auth (src/server/auth/local.ts), so this is for local databases only.
+ * An existing login is never touched, so re-running the seed (to move the demo match) cannot reset anyone's password.
+ * Returns [{ player_id, email, password }] for the NEW logins only. The passwords exist nowhere else: the caller
+ * decides what to do with them (the command line writes them to a gitignored file, never to the screen).
+ */
+export async function createLogins(client, { playerIds } = {}) {
+  await ensureLocalAuthSchema(client);
+  const players = await client.query(
+    'select id, email from core.players where ($1::uuid[] is null or id = any($1::uuid[])) order by id',
+    [playerIds ?? null],
+  );
+  const created = [];
+  for (const p of players.rows) {
+    const exists = await client.query('select 1 from local_auth.users where id = $1', [p.id]);
+    if (exists.rowCount > 0) continue;
+    const password = randomPassword();
+    const passwordHash = await hashPassword(password);
+    await client.query('insert into local_auth.users (id, email, password_hash) values ($1, $2, $3) on conflict do nothing', [p.id, p.email, passwordHash]);
+    created.push({ player_id: p.id, email: p.email, password });
+  }
+  return created;
+}
+
+/** Appends logins to a CSV (email,password,player_id). Creates it, with a header, if it is not there. Never overwrites. */
+export function writeCredentialsFile(path, logins) {
+  if (logins.length === 0) return 0;
+  const lines = logins.map((l) => {
+    for (const v of [l.email, l.password, l.player_id]) if (/[",\r\n]/.test(v)) throw new Error('Unexpected character in a credential value.');
+    return `${l.email},${l.password},${l.player_id}`;
+  });
+  const header = existsSync(path) ? '' : 'email,password,player_id\n';
+  appendFileSync(path, `${header}${lines.join('\n')}\n`, { mode: 0o600 });
+  return logins.length;
+}
+
+// ---------------------------------------------------------------------------------------------
 // command line
 // ---------------------------------------------------------------------------------------------
 function parseArgs(argv) {
@@ -206,7 +251,8 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--allow-remote') out.allowRemote = true;
-    else if (['--demo-cutoff-in', '--database-url', '--now'].includes(a)) {
+    else if (a === '--logins') out.logins = true;
+    else if (['--demo-cutoff-in', '--database-url', '--now', '--credentials-file'].includes(a)) {
       if (i + 1 >= argv.length) throw new Error(`${a} needs a value.`);
       out[a.slice(2)] = argv[++i];
     } else throw new Error(`Unknown option ${a}.`);
@@ -219,6 +265,9 @@ export async function main(argv) {
   const url = args['database-url'] ?? process.env.DATABASE_URL;
   if (!url) throw new Error('No database: pass --database-url or set DATABASE_URL.');
   assertSafeTarget(url, { allowRemote: args.allowRemote });
+  if (args.logins && args.allowRemote) {
+    throw new Error('--logins creates TEST-ONLY LocalAuth logins and cannot be combined with --allow-remote.');
+  }
   const demoCutoffInMs = parseDuration(args['demo-cutoff-in'] ?? '90m');
   const now = args.now ? new Date(args.now) : new Date();
   if (Number.isNaN(now.getTime())) throw new Error('--now must be an ISO date and time.');
@@ -228,6 +277,13 @@ export async function main(argv) {
   try {
     const counts = await seed(client, { now, demoCutoffInMs });
     console.log(`Seeded (demo match cutoff in ${args['demo-cutoff-in'] ?? '90m'}):`, JSON.stringify(counts));
+    if (args.logins) {
+      const file = args['credentials-file'] ?? 'credentials.local.csv';
+      const created = await createLogins(client);
+      const written = writeCredentialsFile(file, created);
+      // counts and the file name only: passwords are never printed
+      console.log(written > 0 ? `Created ${written} logins; passwords appended to ${file}.` : 'No new logins (all players already have one).');
+    }
   } finally {
     await client.end();
   }
