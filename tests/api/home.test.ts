@@ -159,3 +159,43 @@ describe('GET /api/home (record and latest results)', () => {
     expect(body.latest_results[0].match_id).not.toBe(newest.rows[0].id);
   });
 });
+
+type StandingRow = { position: number; team: string; is_us: boolean; played: number; goal_difference: number; points: number };
+type Standings = { taken_on: string; rows: StandingRow[] } | null;
+
+describe('GET /api/home (standings)', () => {
+  it('AC-2.4.1 [api] standings come back in position order with the snapshot date', async () => {
+    const expected = await env.db.owner.run(
+      `select r.position, t.name as team, t.is_us, r.played, (r.goals_for - r.goals_against) as goal_difference, r.points
+         from core.standings_rows r join core.teams t on t.id = r.team_id
+        where r.snapshot_id = (select sn.id from core.standings_snapshots sn join core.seasons s on s.id = sn.season_id
+                                where s.is_current order by sn.taken_on desc, sn.id limit 1)
+        order by r.position`,
+    );
+    expect(expected.error).toBeNull();
+    expect(expected.rows.length).toBe(8); // the seeded snapshot has 8 teams
+
+    const body = (await getHome()).body as HomeBody & { standings: Standings };
+    const standings = body.standings as NonNullable<Standings>;
+    expect(standings.taken_on).toMatch(/^\d{4}-\d{2}-\d{2}$/); // in the API (docs/design/api.md); the page does not show it yet
+    expect(standings.rows).toEqual(expected.rows);
+    expect(standings.rows.map((r) => r.position)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(standings.rows.filter((r) => r.is_us).map((r) => r.team)).toEqual(['PINT FC']);
+    for (const row of standings.rows) {
+      expect(Object.keys(row).sort()).toEqual(['goal_difference', 'is_us', 'played', 'points', 'position', 'team']);
+    }
+  });
+
+  it('STANDINGS-API [api] standings is null when there is no snapshot for the current season', async () => {
+    const current = await env.db.owner.run('select id from core.seasons where is_current');
+    const id = String(current.rows[0].id);
+    await env.db.owner.run('update core.seasons set is_current = false where id = $1', [id], { commit: true });
+    try {
+      const res = await getHome();
+      expect(res.status).toBe(200);
+      expect((res.body as HomeBody & { standings: Standings }).standings).toBeNull();
+    } finally {
+      await env.db.owner.run('update core.seasons set is_current = true where id = $1', [id], { commit: true });
+    }
+  });
+});

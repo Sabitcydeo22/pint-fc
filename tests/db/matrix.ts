@@ -55,6 +55,7 @@ export const PUBLIC_VIEWS = [
   'public.v_next_match', // session 07
   'public.v_season_record', // session 08
   'public.v_latest_results', // session 08
+  'public.v_standings', // session 09
 ] as const;
 
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];

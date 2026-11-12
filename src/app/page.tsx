@@ -1,4 +1,5 @@
 import LatestResults from '../components/LatestResults';
+import MiniTable from '../components/MiniTable';
 import NextMatch from '../components/NextMatch';
 import SeasonRecord from '../components/SeasonRecord';
 
@@ -9,6 +10,7 @@ export default function HomePage() {
       <NextMatch />
       <SeasonRecord />
       <LatestResults />
+      <MiniTable />
     </main>
   );
 }

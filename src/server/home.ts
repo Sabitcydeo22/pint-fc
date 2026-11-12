@@ -1,5 +1,5 @@
 // The data behind GET /api/home. Read through the public views as role `anon`: a visitor sees exactly what
-// the database lets a visitor see, whatever this code does. Session 09 adds the standings section here.
+// the database lets a visitor see, whatever this code does.
 import { withDb } from './db';
 
 export interface NextMatchRow {
@@ -28,6 +28,20 @@ export interface LatestResultRow {
   /** Calendar date in the club time zone, "YYYY-MM-DD". */
   played_on: string;
 }
+export interface StandingRow {
+  position: number;
+  team: string;
+  is_us: boolean;
+  played: number;
+  goal_difference: number;
+  points: number;
+}
+export interface Standings {
+  /** Calendar date of the snapshot, "YYYY-MM-DD". In the API (docs/design/api.md); the home page does not show it yet. */
+  taken_on: string;
+  /** In position order. */
+  rows: StandingRow[];
+}
 export interface HomeData {
   /** The database clock, as an ISO instant. The browser keeps its offset from it (docs/design/rules.md §7). */
   server_now: string;
@@ -36,6 +50,8 @@ export interface HomeData {
   record: SeasonRecordRow | null;
   /** At most 5, newest first. */
   latest_results: LatestResultRow[];
+  /** The latest snapshot of the current season, or null when there is none (the page shows an empty state). */
+  standings: Standings | null;
 }
 
 const iso = (value: string | Date): string => new Date(value).toISOString();
@@ -83,11 +99,32 @@ export async function getHome(): Promise<HomeData> {
       [LATEST_RESULTS_LIMIT],
     );
 
+    // the view is already in position order; the explicit order keeps the API from depending on that
+    const table = await client.query<StandingRow & { taken_on: string }>(
+      `select taken_on::text as taken_on, position, team, is_us, played, goal_difference, points
+         from public.v_standings order by position`,
+    );
+    const standings: Standings | null =
+      table.rows.length > 0
+        ? {
+            taken_on: table.rows[0].taken_on,
+            rows: table.rows.map((r) => ({
+              position: r.position,
+              team: r.team,
+              is_us: r.is_us,
+              played: r.played,
+              goal_difference: r.goal_difference,
+              points: r.points,
+            })),
+          }
+        : null;
+
     return {
       server_now: serverNow,
       next_match,
       record: rec.rows.length > 0 ? rec.rows[0] : null,
       latest_results: latest.rows,
+      standings,
     };
   });
 }

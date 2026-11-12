@@ -260,3 +260,43 @@
 - Empty-state tests: DB tests build their own fixtures in a fresh database (`setup([...])` in `tests/db/results.test.ts`); API tests set `core.results.published = false` for the published rows and restore it in a `finally`; e2e tests answer `/api/home` with `page.route` (`mockHome()` in `tests/e2e/home-results.spec.ts`) and never touch the shared e2e database.
 - Test ids: `season-record`, `record-played`, `record-won`, `record-drawn`, `record-lost`, `record-gf`, `record-ga`, `season-record-empty` ("No results yet"), `season-record-loading`, `season-record-error`, `season-record-retry`, `latest-results`, `result-row`, `result-outcome` (W/D/L), `results-empty`, `results-loading`, `results-error`, `results-retry`. The mini league table (session 09) should follow the same pattern.
 - The seed gives: 10 published league results (record 10 played, 6 won, 2 drawn, 2 lost, 19-12), 1 published friendly, 1 saved-but-unpublished result on the NEWEST played match (so a leak would show first).
+
+## session-09 — home-mini-table (2026-11-12)
+
+**Done**
+- `supabase/migrations/0006_v_standings.sql`: `public.v_standings` (columns `taken_on, position, team, is_us, played, goal_difference, points`; the latest snapshot of the CURRENT season, one row per team, in position order; no snapshot means no rows). Read-only; `select` for anon, authenticated and service_role.
+- `src/server/home.ts`: `getHome()` now also returns `standings` (`{ taken_on, rows }` or `null`); new exported types `StandingRow`, `Standings`.
+- `src/components/MiniTable.tsx` (client; fetches `/api/home` itself; loading, empty "No table yet", error with `table-retry`; a real `<table>`); `src/app/page.tsx` mounts it below the latest results.
+- Tests: `tests/db/standings.test.ts` (4: AC-2.4.1, STANDINGS-1..3), `tests/api/home.test.ts` (2 more, 10 in all: AC-2.4.1, STANDINGS-API), `tests/e2e/home-table.spec.ts` (6: AC-2.4.1, AC-2.4.2, MINI-TABLE-1..4).
+- Owner-approved edits outside the plan's file list: `tests/db/matrix.ts` (`public.v_standings` added to `PUBLIC_VIEWS`), `src/app/page.tsx`, `tests/api/home.test.ts`.
+- AC-2.4.3 is NOT done here by design: `taken_on` is in the API response, but the page does not show it and there is no `table-snapshot-date` element; MINI-TABLE-1 [e2e] guards that.
+
+**Proof**
+- RED first (an empty placeholder migration, `getHome()` without `standings`, a component rendering nothing): db 4 of 4 failed (`expected { code: '42P01' ... } to be null`, the view does not exist); API 2 of 10 failed (`TypeError: Cannot read properties of undefined (reading 'taken_on')` and `expected undefined to be null`; the first is a TypeError, not an assertion); e2e 6 of 6 failed (`element(s) not found` for `mini-table`, `table-empty`, `table-error`; `table-row-us` count 0, expected 1).
+- One test-design correction before GREEN: our row carries `table-row-us` INSTEAD of `table-row` (one element, one test id), so the e2e tests count rows with `[data-testid="table-row"], [data-testid="table-row-us"]`.
+- Exit gate, each command on its own, exit 0: `npm run test:db -- tests/db/standings.test.ts` 4 passed; `npm run test:e2e -- tests/e2e/home-table.spec.ts` 6 passed; `npm run gate` ALL 7 GATES PASSED (unit 21, db 38, api 28, e2e 27, plan:check OK). The API tests ran unpiped inside the full gate.
+- Security mutation check (each on its own, restored byte for byte; SHA-256 and `fc /b` equal to the snapshots, no `MUTATION` marker left in any of the three files):
+  - M1 the view shows the OLDEST snapshot of the season: CAUGHT by STANDINGS-1 only.
+  - M2 the view may pick a snapshot of any season: CAUGHT by STANDINGS-1 only.
+  - M3 an extra internal column (`team_id`) leaks: CAUGHT (STANDINGS-3, exact column list).
+  - M4 `grant insert, update, delete` on the view to `anon`: CAUGHT ONLY BY THE ACCESS MATRIX (MATRIX-1); STANDINGS-3 does not catch it because the view is not updatable anyway.
+  - M5 `is_us` flags the wrong teams: CAUGHT (STANDINGS-2, db level; the API and e2e tests were not run against it).
+  - M6 the API reorders the rows (`order by position desc`): CAUGHT (AC-2.4.1 [api]).
+  - M7 the e2e page drops the left bar of our row: CAUGHT (AC-2.4.2: border-left 0, expected >= 4).
+  - M8 the page drops the bold label of our row: CAUGHT (AC-2.4.2).
+  - M9 the page shows the snapshot date (`table-snapshot-date`): CAUGHT (MINI-TABLE-1).
+- Known gaps: M1 and M2 each rest on a single test (STANDINGS-1); M5 was only run at the db level; no mutation was run on the empty or error states of `MiniTable`.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it — the owner decides)
+- D-79 `v_standings` is the latest snapshot (newest `taken_on`, then `id`) of the CURRENT season; a snapshot of another season never shows even if its date is newer; no snapshot for the current season means no rows, so the API sends `standings: null` and the page says "No table yet".
+- D-80 `goal_difference` is computed in the view (`goals_for - goals_against`), not stored; `won/drawn/lost`, `goals_for/goals_against` are not exposed (the mini table does not need them).
+- D-81 `standings.taken_on` is in the `/api/home` response ("YYYY-MM-DD" text, as in `docs/design/api.md`) but the home page does not show it: session 16 adds `table-snapshot-date` with the owner (AC-2.4.3).
+- D-82 Our row's test id is `table-row-us` and the other rows' is `table-row` (never both on one element). The highlight is a bold `table-us-label` AND a 6 px left border on the row (a border survives high-contrast / forced-colors modes), plus a light background; the other rows have no border.
+- D-83 `MiniTable` is a real `<table>` (`table-layout: fixed`, columns Pos, Team, P, GD, Pts) with long team names wrapping, so it fits 320 px with no sideways scroll; it fetches `/api/home` itself (now 4 requests per page load with the other sections; a shared loader remains a later cleanup) and its retry button is `table-retry`.
+
+**Next session needs to know**
+- `GET /api/home` returns `{ server_now, next_match, record, latest_results, standings }`; `standings` is `null` or `{ taken_on: "YYYY-MM-DD", rows: [{ position, team, is_us, played, goal_difference, points }] }` in position order. All five home sections are now done.
+- Session 16 (live in class) adds the snapshot date: render `standings.taken_on` as "As of ..." with test id `table-snapshot-date` inside `MiniTable`, and replace the guard test MINI-TABLE-1 in `tests/e2e/home-table.spec.ts` (it currently asserts the date is NOT shown); add AC-2.4.3.
+- Test ids: `mini-table`, `table-row` (other teams), `table-row-us` (PINT FC), `table-us-label`, `table-pos`, `table-played`, `table-gd` ("+7", "-1", "0"), `table-points`, `table-empty` ("No table yet"), `table-loading`, `table-error`, `table-retry`.
+- The seed gives 8 teams, 10 played each, PINT FC second (GD +7, 20 points), snapshot taken 9 days before the seed run. A mocked `/api/home` in e2e tests must now include all five keys or a section shows its error state (the older mocks of sessions 07 and 08 omit some keys, which only makes the other sections show errors, never failing their own checks).
+- Each section still fetches `/api/home` on its own (4 requests per page load).
