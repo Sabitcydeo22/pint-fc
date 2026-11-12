@@ -53,6 +53,8 @@ export const PUBLIC_FUNCTIONS: { object: string; allow: Role[] }[] = [
 /** Views in `public` (the read surface for visitors and players). Added by session 07 and later. */
 export const PUBLIC_VIEWS = [
   'public.v_next_match', // session 07
+  'public.v_season_record', // session 08
+  'public.v_latest_results', // session 08
 ] as const;
 
 const PUBLIC_ROLES: Role[] = ['anon', 'authenticated'];

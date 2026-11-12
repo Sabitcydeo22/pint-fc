@@ -82,3 +82,80 @@ describe('GET /api/home (next match)', () => {
     expect(POST, 'the route exports GET only').toBeUndefined();
   });
 });
+
+type Record6 = { played: number; won: number; drawn: number; lost: number; goals_for: number; goals_against: number };
+type ResultRow = { match_id: string; opponent: string; goals_for: number; goals_against: number; played_on: string };
+type HomeBody = { server_now: string; next_match: NextMatch; record: Record6 | null; latest_results: ResultRow[] };
+
+describe('GET /api/home (record and latest results)', () => {
+  it('AC-2.2.1 [api] season record is computed from published league results', async () => {
+    // worked out here from the tables, independently of the view
+    const expected = await env.db.owner.run(
+      `select count(*)::int as played,
+              (count(*) filter (where r.goals_for > r.goals_against))::int as won,
+              (count(*) filter (where r.goals_for = r.goals_against))::int as drawn,
+              (count(*) filter (where r.goals_for < r.goals_against))::int as lost,
+              sum(r.goals_for)::int as goals_for, sum(r.goals_against)::int as goals_against
+         from core.results r join core.matches m on m.id = r.match_id
+         join core.competitions c on c.id = m.competition_id join core.seasons s on s.id = m.season_id
+        where r.published and m.status = 'played' and c.kind = 'league' and s.is_current`,
+    );
+    expect(expected.error).toBeNull();
+    const res = await getHome();
+    expect(res.status).toBe(200);
+    const body = res.body as HomeBody;
+    expect(body.record).toEqual(expected.rows[0]);
+    expect(body.record?.played).toBe(10); // the seed: ten published league results
+    expect(Object.keys(body.record as Record6).sort()).toEqual(['drawn', 'goals_against', 'goals_for', 'lost', 'played', 'won']);
+  });
+
+  it('AC-2.2.4 [api] no published results shows the record empty state', async () => {
+    const published = await env.db.owner.run('select match_id from core.results where published');
+    const ids = published.rows.map((r) => String(r.match_id));
+    expect(ids.length).toBeGreaterThan(0);
+    await env.db.owner.run('update core.results set published = false where match_id = any($1::uuid[])', [ids], { commit: true });
+    try {
+      const res = await getHome();
+      expect(res.status).toBe(200);
+      const body = res.body as HomeBody;
+      expect(body.record).toBeNull(); // null, never an all-zero record
+      expect(body.latest_results).toEqual([]);
+    } finally {
+      await env.db.owner.run('update core.results set published = true where match_id = any($1::uuid[])', [ids], { commit: true });
+    }
+  });
+
+  it('AC-2.3.1 [api] latest five published results appear newest first', async () => {
+    const expected = await env.db.owner.run(
+      `select m.id, t.name as opponent, r.goals_for, r.goals_against
+         from core.results r join core.matches m on m.id = r.match_id join core.teams t on t.id = m.opponent_id
+        where r.published and m.status = 'played' order by m.kickoff_at desc, m.id limit 5`,
+    );
+    const body = (await getHome()).body as HomeBody;
+    expect(body.latest_results).toHaveLength(5);
+    expect(body.latest_results.map((r) => r.match_id)).toEqual(expected.rows.map((r) => r.id));
+    expect(body.latest_results.map((r) => [r.opponent, r.goals_for, r.goals_against])).toEqual(
+      expected.rows.map((r) => [r.opponent, r.goals_for, r.goals_against]),
+    );
+    for (const row of body.latest_results) {
+      expect(Object.keys(row).sort()).toEqual(['goals_against', 'goals_for', 'match_id', 'opponent', 'played_on']);
+      expect(row.played_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    const dates = body.latest_results.map((r) => r.played_on);
+    expect([...dates].sort().reverse(), 'newest first').toEqual(dates);
+  });
+
+  it('AC-2.3.2 [api] unpublished result never appears in latest results', async () => {
+    const unpublished = await env.db.owner.run('select match_id from core.results where not published');
+    expect(unpublished.rows.length).toBeGreaterThan(0); // the seed saves one result without publishing it
+    const res = await getHome();
+    const body = res.body as HomeBody;
+    const text = JSON.stringify(body);
+    for (const row of unpublished.rows) expect(text, 'the unpublished match id is nowhere in the response').not.toContain(String(row.match_id));
+    expect(body.latest_results.map((r) => r.match_id)).not.toContain(String(unpublished.rows[0].match_id));
+    // the unpublished one is the NEWEST match: if it leaked it would be first
+    const newest = await env.db.owner.run(`select m.id from core.matches m where m.status = 'played' order by m.kickoff_at desc limit 1`);
+    expect(newest.rows[0].id).toBe(unpublished.rows[0].match_id);
+    expect(body.latest_results[0].match_id).not.toBe(newest.rows[0].id);
+  });
+});

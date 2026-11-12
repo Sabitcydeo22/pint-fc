@@ -221,3 +221,42 @@
 - e2e freezing time: copy `frozenHome()` from `tests/e2e/home-next.spec.ts` (`clock.install`, `clock.pauseAt` before `goto`, then `clock.runFor(ms)` to tick); answer `/api/home` with `page.route('**/api/home', ...)`.
 - Test ids on the card: `next-match-card`, `next-match-opponent`, `next-match-competition`, `next-match-venue`, `next-match-kickoff`, `countdown`, `countdown-d/h/m/s`, `rsvp-status`, `rsvp-cutoff`, `go-to-event`, `next-match-empty`, `next-match-loading`, `next-match-error`, `retry-button`.
 - `/fixtures/[id]` is still a stub (session 06); `go-to-event` already links to it.
+
+## session-08 — home-record-results (2026-11-12)
+
+**Done**
+- `supabase/migrations/0005_record_results_views.sql`: `public.v_season_record` (columns `played, won, drawn, lost, goals_for, goals_against`; current season, league only, published results on `played` matches; NO row when there is nothing to count) and `public.v_latest_results` (columns `match_id, opponent, goals_for, goals_against, played_on, played_at`; every published league or friendly result on a `played` match, newest first). Both read-only; `select` for anon, authenticated and service_role.
+- `src/server/home.ts`: `getHome()` now also returns `record` (or `null`) and `latest_results` (first 5, `played_on` as text "YYYY-MM-DD"). New exported types `SeasonRecordRow`, `LatestResultRow`, constant `LATEST_RESULTS_LIMIT`.
+- `src/components/SeasonRecord.tsx`, `src/components/LatestResults.tsx` (client; each fetches `/api/home` itself, with its own loading, empty and error states); `src/app/page.tsx` mounts them under the next-match card.
+- Tests: `tests/db/results.test.ts` (8: AC-2.2.1, 2.2.2, 2.2.3, RECORD-1, AC-2.3.1, 2.3.2, LATEST-1, T-11), `tests/api/home.test.ts` (4 more, 8 in all: AC-2.2.1, 2.2.4, 2.3.1, 2.3.2), `tests/e2e/home-results.spec.ts` (5: AC-2.2.4, HOME-RESULTS-1..4).
+- Owner-approved edits outside the plan's file list: `tests/db/matrix.ts` (two names added to `PUBLIC_VIEWS`) and `src/app/page.tsx`.
+
+**Proof**
+- RED first (an empty placeholder migration, `getHome()` without the new keys, components rendering nothing): db 8 of 8 failed (`expected { code: '42P01' ... } to be null`, view does not exist); API 4 of 8 failed (`expected undefined to deeply equal { played: 10, ... }`, `expected undefined to be null`, `Target cannot be null or undefined`; AC-2.3.2 failed with a TypeError on the missing array, the other three on assertions); e2e 5 of 5 failed (`element(s) not found` for `season-record`, `season-record-empty`, `record-played`, `season-record-error`; `result-row` count 0, expected 3).
+- First GREEN: db 7 of 8 passed. The one failure was a test slip: the `pg` driver turns a `date` into a JS `Date`, so the date check now compares `played_on::text` with a value computed in SQL.
+- Exit gate, each command on its own, exit 0: `npm run test:db -- tests/db/results.test.ts` 8 passed; `npm run test:api -- tests/api/home.test.ts` 8 passed; `npm run test:e2e -- tests/e2e/home-results.spec.ts` 5 passed; `npm run gate` ALL 7 GATES PASSED (unit 21, db 34, api 26, e2e 21, plan:check OK).
+- Security mutation check (each on its own, restored byte for byte; SHA-256 and `fc /b` equal to the snapshots, no `MUTATION` marker left in any of the four files):
+  - M1 record counts unpublished results: CAUGHT (AC-2.2.2, RECORD-1, T-11).
+  - M2 record counts friendlies: CAUGHT (AC-2.2.3, RECORD-1).
+  - M3 latest results show unpublished results: CAUGHT (AC-2.3.2, T-11).
+  - M4 latest results drop the `played` filter (cancelled and unplayed matches with a published result row show): CAUGHT BY T-11 ONLY (one test).
+  - M5 `grant insert, update, delete` on `v_latest_results` to `anon`: CAUGHT ONLY BY THE ACCESS MATRIX (MATRIX-1); LATEST-1 does not catch it because the view is not updatable anyway.
+  - M6 an extra internal column (`venue_id`) leaks through `v_latest_results`: CAUGHT (LATEST-1, exact column list).
+  - M7 the record returns a row of zeros instead of no row: CAUGHT (RECORD-1, db level only; the API and e2e AC-2.2.4 tests were not run against this mutation).
+  - M8 the API drops the limit of 5: CAUGHT (AC-2.3.1 [api]).
+- Known gaps: M4 is caught by one test only; the `m.status = 'played'` rule in `v_season_record` has no mutation of its own (RECORD-1 and T-11 cover it by their fixtures but it was not mutated); no mutation was run on the two components.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it — the owner decides)
+- D-73 `v_season_record` covers the current season only (`seasons.is_current`), league competitions only, published results on `played` matches only; with nothing to count it returns NO row, so the API sends `record: null` and the page says "No results yet" (never a row of zeros).
+- D-74 `v_latest_results` has no limit and no season filter; it is ordered newest match first and carries `played_at` (kickoff instant) for ordering and `played_on` (calendar date in the club zone) for display. The API orders explicitly (`played_at desc, match_id`) and takes 5 (`LATEST_RESULTS_LIMIT`), so the page never relies on the view's own ordering.
+- D-75 A result row counts only when its match is `played`, even if `published` is true: a cancelled or not-yet-played match with a result row must never leak (T-11).
+- D-76 `played_on` goes through the API as text ("YYYY-MM-DD", `played_on::text`) and the page formats it as a plain date (UTC, no shift), so a viewer's time zone can never move the day.
+- D-77 `SeasonRecord` and `LatestResults` each fetch `/api/home` themselves (3 requests per page load together with `NextMatch`) so each section has independent loading, empty and error states; their retry buttons have their own test ids (`season-record-retry`, `results-retry`) so they never clash with the next-match `retry-button`. A shared loader would remove the extra requests but needs a new file; left for a later session.
+- D-78 The new sections use inline styles only: `src/app/globals.css` was not on this session's file list.
+
+**Next session needs to know**
+- `GET /api/home` now returns `{ server_now, next_match, record, latest_results }`: `record` is `null` or `{ played, won, drawn, lost, goals_for, goals_against }` (integers); `latest_results` is an array of at most 5 `{ match_id, opponent, goals_for, goals_against, played_on }` with `played_on` "YYYY-MM-DD". Session 09 adds `standings` to the same route: one more view read in `getHome()` and one more field on `HomeData`.
+- Views: `public.v_season_record` and `public.v_latest_results` (columns above); both are in `PUBLIC_VIEWS` in `tests/db/matrix.ts`. As in session 07, a view cannot call `core.*` functions as a visitor (D-68).
+- Empty-state tests: DB tests build their own fixtures in a fresh database (`setup([...])` in `tests/db/results.test.ts`); API tests set `core.results.published = false` for the published rows and restore it in a `finally`; e2e tests answer `/api/home` with `page.route` (`mockHome()` in `tests/e2e/home-results.spec.ts`) and never touch the shared e2e database.
+- Test ids: `season-record`, `record-played`, `record-won`, `record-drawn`, `record-lost`, `record-gf`, `record-ga`, `season-record-empty` ("No results yet"), `season-record-loading`, `season-record-error`, `season-record-retry`, `latest-results`, `result-row`, `result-outcome` (W/D/L), `results-empty`, `results-loading`, `results-error`, `results-retry`. The mini league table (session 09) should follow the same pattern.
+- The seed gives: 10 published league results (record 10 played, 6 won, 2 drawn, 2 lost, 19-12), 1 published friendly, 1 saved-but-unpublished result on the NEWEST played match (so a leak would show first).
