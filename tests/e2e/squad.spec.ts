@@ -117,7 +117,9 @@ test('T-10 [e2e] hidden and archived players return an identical 404', async ({ 
     // Next prefetches /squad (header, footer and back links) and appends that route's chunk as a <script src> to <head>
     // whenever the prefetch finishes, so a capture can land before or after it. Only those tags are removed; every
     // other byte of the document is still compared.
-    pages.push(html.replaceAll(id, '<ID>').replace(/<script src="\/_next\/static\/chunks\/[^"]*"><\/script>/g, ''));
+    // The CSP nonce (src/middleware.ts) is different on every request and appears inside the framework's page payload
+    // as an escaped JSON property. Only that property's value is masked.
+    pages.push(html.replaceAll(id, '<ID>').replace(/<script src="\/_next\/static\/chunks\/[^"]*"><\/script>/g, '').replace(/\\"nonce\\":\\"[A-Za-z0-9+/]{48}\\"/g, '\\"nonce\\":\\"<NONCE>\\"'));
   }
   expect(new Set(texts).size, 'one and the same page for hidden, archived and unknown').toBe(1);
   // and the whole document is the same for a hidden, an archived and a never-existed player
