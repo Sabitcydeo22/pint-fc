@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAuth } from '../../src/server/auth';
+import { SupabaseAuth } from '../../src/server/auth/supabase';
 // @ts-expect-error TS7016 plain .mjs module, typed locally
 import * as seedModule from '../../scripts/seed.mjs';
 
@@ -10,7 +11,7 @@ const { writeCredentialsFile } = seedModule as unknown as {
   writeCredentialsFile: (file: string, logins: { email: string; password: string; player_id: string }[]) => number;
 };
 
-const KEYS = ['VERCEL_ENV', 'AUTH_ADAPTER', 'LOCAL_AUTH_SECRET', 'DATABASE_URL'] as const;
+const KEYS = ['VERCEL_ENV', 'AUTH_ADAPTER', 'LOCAL_AUTH_SECRET', 'DATABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as const;
 let saved: Record<string, string | undefined>;
 beforeEach(() => {
   saved = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
@@ -23,7 +24,7 @@ afterEach(() => {
 });
 
 describe('auth adapter selection', () => {
-  it('AUTH-LOCAL-1 LocalAuth refuses to load on Vercel, and the real adapter is not available yet', () => {
+  it('AUTH-LOCAL-1 LocalAuth refuses to load on Vercel, and the real adapter needs its URL and key', () => {
     process.env.AUTH_ADAPTER = 'local';
     process.env.LOCAL_AUTH_SECRET = 'x'.repeat(40);
     process.env.DATABASE_URL = 'postgresql://postgres:pw@127.0.0.1:1/postgres';
@@ -42,10 +43,22 @@ describe('auth adapter selection', () => {
     process.env.VERCEL_ENV = 'production';
     expect(() => getAuth()).toThrow(/LocalAuth|adapter/i);
 
-    // the Supabase adapter arrives in session 18
+    // the Supabase adapter (session 18): without its URL and key it refuses to start...
     delete process.env.VERCEL_ENV;
     process.env.AUTH_ADAPTER = 'supabase';
-    expect(() => getAuth()).toThrow(/session 18|not available/i);
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    expect(() => getAuth()).toThrow(/must be set/i);
+    // ...and with a placeholder URL and key it returns the real adapter without any network call
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://project.example.test';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'placeholder-publishable-key';
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    try {
+      expect(getAuth()).toBeInstanceOf(SupabaseAuth);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
     process.env.AUTH_ADAPTER = 'whatever';
     expect(() => getAuth()).toThrow(/unknown/i);
   });

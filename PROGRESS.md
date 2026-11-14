@@ -606,3 +606,48 @@
 - A new inline `<script>` added by app code will be blocked unless it carries the nonce; Next's own scripts get it automatically. The middleware does not run for `/api/*`, `/_next/*` or `favicon.ico`, so those carry only the `next.config.mjs` directives.
 - The new e2e tests use the same seeded ids and fake data as earlier sessions; none of them writes to the shared database. AC-3.3.1 and LIVE-1 still need the demo match to be open (90-minute limit, D-112 and D-116).
 - `DECISIONS.md` still needs D-120 to D-129 copied from this section (owner's staging prompt).
+
+## session-18 — supabase-smoke (2026-11-14)
+
+**Done**
+- Real Supabase project `pintfc` created by the owner (project ref `adtxoxwpuejmqgkhzpja`, region eu-north-1); sign-ups disabled in the dashboard; the existing paused project was not touched. Keys and the pooler connection string are in `.env.local` only (names checked, values never shown).
+- JWT lifetime: the 5-minute setting is NOT available on the Free plan (Authentication > Sessions is Pro-only; the owner found no 300-second setting). The default lifetime is NOT stated because it was not verified. Fallback recorded under D-13 in `DECISIONS.md`: `core.require_player()` (checks `auth.sessions` on every database call) plus `getUser()` (asks Auth on every request).
+- `npx supabase db push --db-url` (dry run first, then real, owner "yes" each time): migrations 0001 to 0010 applied to the real project; `auth-stub.sql` never applied.
+- `src/server/auth/supabase.ts` (new, plain fetch, no install) and `src/server/auth/index.ts` (owner-approved edit: `AUTH_ADAPTER=supabase` returns it; needs the project URL and the publishable key).
+- `tests/smoke/smoke.test.ts` (4 tests) and the `test:smoke` script in `package.json`. SMOKE-1 real sign-in and sign-out-all; SMOKE-2 REST lists only allowed views and functions (secret-key listing equals the access matrix exactly; anon listing equals the views or is closed); SMOKE-3 RSVP round trip through the PUT route and through REST `rpc_rsvp_set`; SMOKE-4 `core` unreachable from REST, with a precondition that the migrations are applied.
+- Test players per the owner's Option B (inside the test, no seed change). The remote full seed was NOT run.
+- `tests/unit/supabase-auth.test.ts` (new, owner-approved file outside the plan's list; 6 tests tagged `SMOKE-5 [unit]`): the Auth service (`fetch`) and the database (`withDb`) are both mocked, no keys, no network, no writes. They cover the two rules the smoke suite could not reach without a third fake player on the real project: a user the database refuses with `PF401` gets `null`, and the session just opened for that user is ended with its own token exactly once (also when the database error is not `PF401`, which is thrown); plus the accepted-player path (ids, HttpOnly cookie, no logout) and a wrong password (never reaches the database). The unit file runs in `npm run test:unit`, so it is in the gate.
+
+**Proof**
+- RED first, no writes: 4 of 4 failed. SMOKE-1 and SMOKE-3 `The Supabase auth adapter is not available yet (session 18).`; SMOKE-2 `anon GET /v_next_match: expected 404 to be 200` (migrations not pushed); SMOKE-4 `core.players exists (migrations applied): expected false to be true`.
+- After the push, SMOKE-2 and SMOKE-4 alone (no `SMOKE_WRITE`): 2 passed, exit 0. After the adapter, the first full run with `SMOKE_WRITE=yes` (set for that one command only): 4 passed, exit 0. Typecheck 0, lint 0, `test:unit` 12 files / 32 tests passed before the smoke run.
+- Mutation check on `supabase.ts`, each alone against `npm run test:smoke` with `SMOKE_WRITE=yes`, restored with Edit; SHA-256 `4EC6FDD8...A310A5D4` equal to the snapshot, `fc /b` "no differences", 0 `MUTATION` markers in src after each:
+  - M1 an archived or non-player user is allowed to sign in (the `PF401` refusal is ignored): SURVIVED the four smoke tests (4 passed). Then CAUGHT by the new unit tests (below): `SMOKE-5 [unit] a user the database refuses with PF401 gets null` failed (`expected { …(3) } to be null`), 1 failed | 5 passed.
+  - M2 a failed `rpc_me` check does not end the new session: SURVIVED the four smoke tests (4 passed). Then CAUGHT by the new unit tests: `the session opened for a refused user is ended with its own token, exactly once` and `any other database error is thrown ... and the session is still ended` both failed (`expected +0 to be 1`), 2 failed | 4 passed.
+  - M1 and M2 were re-run against `npm run test:unit -- tests/unit/supabase-auth.test.ts` only (no real project contact). After each, `supabase.ts` was restored with Edit; SHA-256 `4EC6FDD8...A310A5D4` equal to the snapshot, `fc /b` "no differences", and a case-sensitive search for the `MUTATION` marker in src and tests found none (`git grep` outside PROGRESS.md: no match).
+  - M3 `getUser` trusts the token without asking Auth: CAUGHT by SMOKE-1 (`adapter refuses the old cookie: expected { ... } to be null`).
+  - M4 `signOutAll` does not call Auth: CAUGHT by SMOKE-1 (same assertion).
+- Slip, caught by the owner's gate: after editing `src/server/auth/index.ts` I did NOT run `npm run test:api`, so `tests/api/local-auth.test.ts` AUTH-LOCAL-1 still asserted the old "supabase adapter is not available yet" error and the gate caught it. Owner-approved fix (D-140): only that assertion in AUTH-LOCAL-1 was replaced (missing URL and key throws "must be set"; with a placeholder URL and key `getAuth()` returns a `SupabaseAuth` and `fetch` is never called; the LocalAuth-refuses-on-Vercel assertions are unchanged; `process.env` restored). `npm run test:api -- tests/api/local-auth.test.ts` alone: 3 passed, exit 0. Lesson: after changing any file under `src/server/auth`, run `test:api` (and `test:unit`) before staging, not only the smoke and the new unit tests.
+- With the new unit file and the files staged: `npm run test:unit` 13 files / 38 tests passed, exit 0 (includes the T-14 scanner reading the staged files); typecheck 0, lint 0. The exit gate was not run by the assistant.
+- A final green run after the restores: 4 passed, exit 0. It also ended the live sessions the M4 run left behind; a read-only check showed 0 smoke sessions and the smoke match `cancelled`.
+- The exit gate (`npm run gate`) was NOT run by the assistant: the owner runs it after staging.
+
+**Decisions** (D-130 to D-138, also in `DECISIONS.md`)
+- No SDK; publishable key only at runtime. Cookie is the access token, no refresh. `getUser` asks Auth on every request. Sign-in checks `rpc_me` and ends the session on `PF401`. Sign-out-all uses the player's own token with `scope=global`, remembered in memory. Smoke fixtures live in the test, written only with `SMOKE_WRITE=yes`, never deleted, match cancelled afterwards. `test:smoke` is outside the gate. Push by `--db-url` read from `.env.local`. No remote full seed.
+
+**Known gaps**
+- Two security rules in the adapter (an archived or non-player user cannot sign in; a refused sign-in ends its session) survived the four smoke tests, because proving them on the real project needs a third Auth user with no active player row. They are now covered by mocked unit tests (D-139). What is still NOT proven end to end on the real Auth service: that a real archived player is refused (the database rule itself is proven by the db tests; the adapter's reaction to it by the unit tests).
+- Step 5 (open a preview-style URL and see whether sign-in cookies work) was NOT done: no Vercel project or preview exists yet. Open for session 19.
+- Token lifetime unverified (no 5-minute setting on Free); there is no refresh token, so players sign in again when the token expires.
+- Sign-out-all works only when the session's token is known to the server instance (it is, in the normal route flow); otherwise it throws. Not tested across two server instances.
+- SMOKE-2 accepts either an exact anon listing or a 401/403 for it; the run did not record which branch was taken.
+- The smoke rows stay on the real project: 2 auth users, 2 players, 1 non-current season, 1 competition, 1 venue, 1 team ("Smoke Test FC"), 1 cancelled match, 1 RSVP row. None is public.
+- `--db-url` is deprecated in the Supabase CLI (v4 removes it).
+- `npm run test:smoke` is outside `npm run gate` on purpose; a future CI step would need the real keys.
+
+**Next session needs to know**
+- Project ref `adtxoxwpuejmqgkhzpja` (region eu-north-1). Never put keys in a file other than `.env.local`. For Vercel: `AUTH_ADAPTER=supabase`, `DATABASE_URL` (pooler), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the publishable key); the secret key must NOT be set on Vercel.
+- Re-run the smoke suite: in PowerShell, `$env:SMOKE_WRITE='yes'; npm run test:smoke; Remove-Item Env:SMOKE_WRITE` (only with the owner's yes; it writes the smoke rows and cancels the match at the end).
+- The real project has the schema and no seed. To seed it later: `node scripts/seed.mjs --database-url <url> --allow-remote --demo-cutoff-in 90m` (owner "yes" first; the URL is never printed). The seed's `--logins` refuses remote (D-60), so the 40 real logins (players.id = Auth user id) need a separate, owner-approved script. Moving the demo match is a rerun with a new `--demo-cutoff-in`.
+- Smoke ids start with `5a0c0000`, shirts 98 and 99, emails `smoke-one@pintfc.test` and `smoke-two@pintfc.test`; a full seed will not clash with them.
+- A test that scans tracked files (T-14) must be run after staging (session 17 lesson): `tests/smoke/smoke.test.ts` is new and holds no token-shaped values.

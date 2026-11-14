@@ -11,6 +11,7 @@
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:db": "vitest run --config vitest.db.config.ts",
     "test:api": "vitest run --config vitest.api.config.ts",
+    "test:smoke": "vitest run tests/smoke --testTimeout=120000 --hookTimeout=120000 --no-file-parallelism",
     "test:e2e": "playwright test",
     "plan:check": "node scripts/plan-check.mjs",
     "gate": "node scripts/gate.mjs"
