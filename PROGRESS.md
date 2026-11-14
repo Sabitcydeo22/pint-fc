@@ -505,3 +505,32 @@
 - Any e2e test of this page: sign in with `signInThroughForm`, mock `**/api/fixtures/*/attendance` (see `openMocked` in `tests/e2e/fixture.spec.ts`) and use the seeded demo match id `00000006-0000-4000-8000-000000000100` in the URL (the page checks the match exists in the database). Freeze time with `page.clock.install` + `pauseAt` (FIXTURE-6).
 - `signin-prompt` from screens.md does not exist (D-108). The PUT response is still the small body of session 13 (D-103); the page reloads attendance after a save instead.
 - Each `npm run test:*` run leaves its usual `pintfc-pg-*` temp folders; the owner may delete them.
+
+## session-15 — rsvp-cutoff-live (2026-11-14)
+
+**Done**
+- `src/components/Attendance.tsx`: `createPoller` (src/lib/poll.ts, used unchanged) now calls `refresh` every 10 s while visible, pauses while hidden, refetches at once when visible again, waits 20 s after an error. `refresh` throws on failure so the poller backs off; the page keeps the older data and shows "Showing older data" + retry. The duplicated mount fetch was removed (first load goes through `refresh`). A `mounted` ref stops state updates after unmount.
+- `src/components/LiveClock.tsx` (new): `useServerNow(clock)` (server-corrected time, ticks every second, follows a new clock at once) and the `LiveClock` component ("Updated n s ago", test id `last-updated`).
+- `tests/e2e/live.spec.ts` (6 tests): AC-3.3.4, AC-3.3.5, LIVE-1 (two real browser contexts, real server), T-17 (device clock behind, then 12 h ahead), POLL-1 (failed poll keeps data), POLL-2 (hidden pause, refetch on visible).
+- Nothing installed. No file outside the plan's list touched. `poll.ts` not edited. `DECISIONS.md` NOT touched.
+
+**Proof**
+- RED first (no poller yet): 5 of 6 failed on assertions (`Expected: 2 Received: 1` on the request counter; LIVE-1 `Expected: 1 Received: 0` on B's count after 15 s). No missing-module errors. **AC-3.3.4 [e2e] was already GREEN before any code**: session 14's refresh after a rejected save already shows "RSVP closed" and keeps the answer. Its DB and API levels are session 13's tests (T-22 etc.); it was not re-proved by a RED here.
+- GREEN: `npm run test:e2e -- tests/e2e/live.spec.ts` 6 passed (exit 0). `npm run gate` ALL 7 GATES PASSED, exit 0 (typecheck, lint, unit 21, db 72, api 59, e2e 56, plan:check OK).
+- Mutation check (each alone, restored with Edit; SHA-256 of Attendance.tsx, LiveClock.tsx, live.spec.ts equal to the snapshots; 0 `MUTATION` markers):
+  - M1 decisions use the device clock (`Date.now()`): CAUGHT by T-17 and POLL-1. **AC-3.3.5 did NOT catch it** (its poll carries `rsvp_open:false`); the server-clock path is proved by T-17 and session 14's FIXTURE-6.
+  - M2 `open` ignores `rsvp_open` and the cutoff: CAUGHT, 3 failed (AC-3.3.4, AC-3.3.5, T-17).
+  - M3 a failed poll wipes the data: CAUGHT by POLL-1.
+  - M4 poller ignores hidden state: CAUGHT by POLL-2.
+  - Not mutated: disabling the buttons lives in `RsvpButtons.tsx` (off this session's list).
+- Process note: files were created and edited with Write/Edit only. The mutation runs were piped to `Select-String` only to shorten output (not exit-gate runs). The gate itself ran as `npm run gate` with no pipe; it exceeded the 10-minute foreground limit, ran in the background and exited 0.
+
+**Decisions** (proposed; `DECISIONS.md` is not on this session's file list, so they are NOT yet in it: the owner decides)
+- D-115 `refresh` throws on a failed load, so the poller waits 20 s; callers that are not the poller (retry button, after a save) catch it (`refreshQuietly`).
+- D-116 LIVE-1 really writes as player `one` on the seeded demo match and changes to an answer `one` does not have, so it works whatever earlier runs left. B (`two`) is watched through its count of that answer: it must rise by 1 within 15 s. It needs the demo match to be open (same 90-minute limit as D-112).
+- D-117 AC-3.3.5 has no separate unit test in this session (the plan lists "U + E2E"; `tests/unit` files are off the file list). The clock maths are covered by session 03's unit tests and FIXTURE-6.
+
+**Next session needs to know**
+- Timing values in tests: poll 10 s (error 20 s); device clock frozen at `2026-11-14T08:00:00Z` with `page.clock.install` + `pauseAt(+1 s)` then `runFor(10_000)`; cutoff `17:00:00Z` (kickoff 19:00Z); "3 s before cutoff" is server_now `16:59:57Z`. LIVE-1 uses real time, 15 s window.
+- The demo match (seed flag, id `00000006-0000-4000-8000-000000000100`, cutoff ~90 min after the e2e server starts) is what the class will watch. LIVE-1 and AC-3.3.1 [e2e] need it open.
+- Mocked e2e tests count attendance GETs with a counter in the `page.route` handler (`openLive` in live.spec.ts returns `calls()`).

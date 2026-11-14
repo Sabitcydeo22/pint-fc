@@ -1,14 +1,16 @@
 'use client';
 // The event page body (docs/design/screens.md, `/fixtures/[id]`): match header, RSVP status, counts, my answer and the
 // attendance list. It loads GET /api/fixtures/[id]/attendance once on mount (the 10-second poller attaches in session
-// 15: see `refresh`), and again after a save. Time maths use the SERVER-corrected clock (a phone with a wrong clock
+// 15: `createPoller` calls `refresh` every 10 s while visible), and again after a save. Time maths use the SERVER-corrected clock (a phone with a wrong clock
 // still closes RSVP at the right moment). The list shows names and answers only: the response carries no reasons, and
 // this component renders only name and answer anyway.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createServerClock, type ServerClock } from '../lib/clock';
+import { createPoller } from '../lib/poll';
 import { formatKickoff } from '../lib/time';
 import type { Attendance as AttendanceData } from '../server/attendance';
 import type { RsvpAnswer } from '../server/rsvp';
+import LiveClock, { useServerNow } from './LiveClock';
 import RsvpButtons from './RsvpButtons';
 
 type Fetched = { ok: true; data: AttendanceData } | { ok: false };
@@ -59,50 +61,40 @@ export default function Attendance({ matchId }: { matchId: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false); // the last load failed (with `loaded` set, the data on screen is older)
   const [loading, setLoading] = useState(true);
-  const [nowMs, setNowMs] = useState(0);
+  const mounted = useRef(true);
 
-  // One load. The session 15 poller will call this same function every 10 s while the tab is visible.
+  // One load, used by the first load, the poller (every 10 s while visible), the retry button and after a save.
+  // A failure keeps the older data on screen. It throws on failure so the poller waits longer (20 s) before the next try.
   const refresh = useCallback(async () => {
     const result = await fetchAttendance(matchId);
+    if (!mounted.current) return;
     if (result.ok) {
-      const clock = createServerClock(result.data.server_now);
-      setLoaded({ data: result.data, clock });
-      setNowMs(clock.now());
+      setLoaded({ data: result.data, clock: createServerClock(result.data.server_now) });
       setFailed(false);
     } else {
       setFailed(true);
     }
     setLoading(false);
+    if (!result.ok) throw new Error('refresh failed');
   }, [matchId]);
 
   useEffect(() => {
-    let cancelled = false;
-    void fetchAttendance(matchId).then((result) => {
-      if (cancelled) return;
-      if (result.ok) {
-        const clock = createServerClock(result.data.server_now);
-        setLoaded({ data: result.data, clock });
-        setNowMs(clock.now());
-      } else {
-        setFailed(true);
-      }
-      setLoading(false);
-    });
+    mounted.current = true;
+    const poller = createPoller({ run: refresh });
+    void Promise.resolve().then(refresh).catch(() => undefined); // the first load (the poller waits one interval before its first run)
+    poller.start();
     return () => {
-      cancelled = true;
+      mounted.current = false;
+      poller.stop();
     };
-  }, [matchId]);
+  }, [refresh]);
 
-  const clock = loaded?.clock;
-  useEffect(() => {
-    if (!clock) return;
-    const timer = setInterval(() => setNowMs(clock.now()), 1000);
-    return () => clearInterval(timer);
-  }, [clock]);
+  const nowMs = useServerNow(loaded?.clock);
 
+  const refreshQuietly = () => void refresh().catch(() => undefined); // the failure is already on screen (`failed`)
   const retry = () => {
     setLoading(true);
-    void refresh();
+    refreshQuietly();
   };
 
   if (!loaded) {
@@ -131,7 +123,6 @@ export default function Attendance({ matchId }: { matchId: string }) {
   const notOpen = match.status !== 'scheduled' || kickedOff;
   // open only if the server said open AND the server-corrected clock is strictly before the cutoff
   const open = !notOpen && match.rsvp_open && nowMs < Date.parse(match.cutoff_at);
-  const secondsAgo = Math.max(0, Math.floor((nowMs - Date.parse(data.server_now)) / 1000));
 
   return (
     <>
@@ -201,7 +192,7 @@ export default function Attendance({ matchId }: { matchId: string }) {
         </div>
       </section>
 
-      {!notOpen ? <RsvpButtons matchId={match.id} open={open} me={me} onChanged={() => void refresh()} /> : null}
+      {!notOpen ? <RsvpButtons matchId={match.id} open={open} me={me} onChanged={refreshQuietly} /> : null}
 
       <section aria-labelledby="list-title" className="card">
         <h2 id="list-title">Attendance</h2>
@@ -230,9 +221,7 @@ export default function Attendance({ matchId }: { matchId: string }) {
             );
           })
         )}
-        <p className="muted" data-testid="last-updated" style={{ marginBottom: 0 }}>
-          Updated {secondsAgo} s ago
-        </p>
+        <LiveClock serverNow={data.server_now} nowMs={nowMs} />
       </section>
     </>
   );
