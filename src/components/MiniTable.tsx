@@ -3,12 +3,19 @@
 // played, goal difference and points. PINT FC's row is marked with a bold label AND a thick left bar, never by
 // colour alone (AC-2.4.2). It loads /api/home itself, so it has its own loading, empty and error states.
 //
-// The snapshot date (`taken_on`) is in the API response but is deliberately NOT shown here: session 16 adds the
-// `table-snapshot-date` element together with the owner (AC-2.4.3).
+// The snapshot date (`taken_on`, a calendar date in the club zone) is shown as "As of Nov 5, 2026" so it is clear the
+// table is not live (AC-2.4.3). It is a date, not an instant, so it is formatted without any time-zone shift.
 import { useEffect, useState } from 'react';
 import type { HomeData, StandingRow } from '../server/home';
 
-type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; rows: StandingRow[] | null };
+type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'ready'; rows: StandingRow[] | null; takenOn: string | null };
+
+// "YYYY-MM-DD" is already the club-zone calendar day; read it as UTC midnight and format in UTC so the day never moves.
+const dateFormat = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+function formatTakenOn(takenOn: string): string {
+  const d = new Date(`${takenOn}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? takenOn : dateFormat.format(d);
+}
 
 async function fetchTable(): Promise<State> {
   try {
@@ -16,7 +23,7 @@ async function fetchTable(): Promise<State> {
     if (!res.ok) throw new Error('bad status');
     const data = (await res.json()) as Partial<HomeData>;
     if (!('standings' in data)) throw new Error('bad shape');
-    return { kind: 'ready', rows: data.standings?.rows ?? null };
+    return { kind: 'ready', rows: data.standings?.rows ?? null, takenOn: data.standings?.taken_on ?? null };
   } catch {
     return { kind: 'error' }; // never the server's text
   }
@@ -62,6 +69,12 @@ export default function MiniTable() {
       ) : state.rows === null || state.rows.length === 0 ? (
         <p data-testid="table-empty">No table yet</p>
       ) : (
+        <>
+        {state.takenOn ? (
+          <p className="muted" data-testid="table-snapshot-date">
+            {`As of ${formatTakenOn(state.takenOn)}`}
+          </p>
+        ) : null}
         <table
           data-testid="mini-table"
           aria-labelledby="mini-table-title"
@@ -126,6 +139,7 @@ export default function MiniTable() {
             ))}
           </tbody>
         </table>
+        </>
       )}
     </section>
   );

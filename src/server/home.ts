@@ -37,7 +37,7 @@ export interface StandingRow {
   points: number;
 }
 export interface Standings {
-  /** Calendar date of the snapshot, "YYYY-MM-DD". In the API (docs/design/api.md); the home page does not show it yet. */
+  /** Calendar date of the snapshot, "YYYY-MM-DD". In the API (docs/design/api.md); the mini table shows it as "As of …" (AC-2.4.3). */
   taken_on: string;
   /** In position order. */
   rows: StandingRow[];

@@ -534,3 +534,22 @@
 - Timing values in tests: poll 10 s (error 20 s); device clock frozen at `2026-11-14T08:00:00Z` with `page.clock.install` + `pauseAt(+1 s)` then `runFor(10_000)`; cutoff `17:00:00Z` (kickoff 19:00Z); "3 s before cutoff" is server_now `16:59:57Z`. LIVE-1 uses real time, 15 s window.
 - The demo match (seed flag, id `00000006-0000-4000-8000-000000000100`, cutoff ~90 min after the e2e server starts) is what the class will watch. LIVE-1 and AC-3.3.1 [e2e] need it open.
 - Mocked e2e tests count attendance GETs with a counter in the `page.route` handler (`openLive` in live.spec.ts returns `calls()`).
+
+## session-16 — live-in-class (2026-11-14)
+
+**Done**
+- `src/components/MiniTable.tsx`: shows the snapshot date from `standings.taken_on` as "As of Nov 5, 2026" (test id `table-snapshot-date`, above the table). `taken_on` is a calendar date already in the club zone, so it is read as UTC midnight and formatted in UTC: the day never shifts. No date when there is no table (empty state).
+- `src/server/home.ts`: comment only (the date is now shown). No logic change.
+- `tests/e2e/home-table.spec.ts`: the placeholder `MINI-TABLE-1` (asserted the date was NOT shown) replaced by `AC-2.4.3 [e2e] mini table shows the snapshot date`, plus `AC-2.4.3 [e2e] the snapshot date is not shown when there is no table`.
+- Nothing installed. No file outside the plan's list touched. Not committed.
+
+**Proof**
+- RED first: AC-2.4.3 failed on an assertion (`getByTestId('table-snapshot-date')` Expected: 1, Received: 0); the other 6 passed.
+- GREEN: `npm run test:e2e -- tests/e2e/home-table.spec.ts` 7 passed, exit 0. `npm run gate` ALL 7 GATES PASSED, exit 0 (typecheck, lint, unit 21, db 72, api 59, e2e 57, plan:check OK).
+- Mutation check (this session has no security rule of its own; mutated the date logic): (A) format in `America/New_York` instead of UTC -> failed `Expected "As of Nov 5, 2026" Received "As of Nov 4, 2026"`; (B) render the raw `taken_on` -> failed `Received "As of 2026-11-05"`. Both reverted with Edit; the e2e file then passed 7/7.
+
+**Decisions**
+- Format "As of Mon D, YYYY" (en-US), in UTC because the value is a date, not an instant. `DECISIONS.md` NOT touched (the plan says to add decisions there too: owner to say if wanted).
+- The old `MINI-TABLE-1` test was replaced because it contradicts AC-2.4.3.
+
+**Next session needs to know:** Nothing special: this session is independent and can be run at any time after session 09.

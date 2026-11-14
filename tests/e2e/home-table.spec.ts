@@ -62,15 +62,23 @@ test('AC-2.4.2 [e2e] PINT FC row is highlighted with label and bar, not colour a
   await expect(label).toBeVisible();
 });
 
-test('MINI-TABLE-1 [e2e] the snapshot date is not shown yet (session 16 adds it with the owner)', async ({ page }) => {
-  await mockHome(page, { taken_on: SNAPSHOT_DATE, rows }); // the API carries the date, the page must not show it
+test('AC-2.4.3 [e2e] mini table shows the snapshot date', async ({ page }) => {
+  await mockHome(page, { taken_on: SNAPSHOT_DATE, rows }); // taken_on is the calendar date 2026-11-05
   await page.goto('/');
   await expect(page.getByTestId('mini-table')).toBeVisible();
+  // it states the date, labelled so it reads as "not live", and the calendar day is not shifted by any time zone
+  await expect(page.getByTestId('table-snapshot-date')).toHaveCount(1);
+  await expect(page.getByTestId('table-snapshot-date')).toHaveText('As of Nov 5, 2026');
+  // the date is in the same section as the table, and the raw ISO string is not shown
+  await expect(page.getByRole('region', { name: 'League table' }).getByTestId('table-snapshot-date')).toBeVisible();
+  expect(await page.getByTestId('page-home').innerText()).not.toContain('2026-11-05');
+});
+
+test('AC-2.4.3 [e2e] the snapshot date is not shown when there is no table', async ({ page }) => {
+  await mockHome(page, null);
+  await page.goto('/');
+  await expect(page.getByTestId('table-empty')).toBeVisible();
   await expect(page.getByTestId('table-snapshot-date')).toHaveCount(0);
-  const text = (await page.getByTestId('page-home').innerText()).toLowerCase();
-  expect(text).not.toContain('as of');
-  expect(text).not.toContain('2026-11-05');
-  expect(text).not.toMatch(/nov(ember)?\s+5\b|\b5\s+nov/);
 });
 
 test('MINI-TABLE-2 [e2e] no snapshot shows the empty state', async ({ page }) => {

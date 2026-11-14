@@ -121,3 +121,5 @@ One line each: decision — reason. "(proposed)" = owner may veto at approval.
 - D-115 `refresh` throws on a failed load, so the poller waits 20 s; callers that are not the poller (retry button, after a save) catch it (`refreshQuietly`).
 - D-116 LIVE-1 really writes as player `one` on the seeded demo match and changes to an answer `one` does not have, so it works whatever earlier runs left. B (`two`) is watched through its count of that answer: it must rise by 1 within 15 s. It needs the demo match to be open (same 90-minute limit as D-112).
 - D-117 AC-3.3.5 has no separate unit test in this session (the plan lists "U + E2E"; `tests/unit` files are off the file list). The clock maths are covered by session 03's unit tests and FIXTURE-6.
+- D-118 (session 16) The snapshot date is shown as "As of Mon D, YYYY" (en-US), formatted in UTC because `taken_on` is a calendar date already in the club zone, not an instant: formatting it in the club zone would move the day (mutation A showed "Nov 4").
+- D-119 (session 16) The old `MINI-TABLE-1` test (asserted the date was NOT shown) was replaced by the AC-2.4.3 tests, because it contradicts AC-2.4.3.
