@@ -651,3 +651,77 @@
 - The real project has the schema and no seed. To seed it later: `node scripts/seed.mjs --database-url <url> --allow-remote --demo-cutoff-in 90m` (owner "yes" first; the URL is never printed). The seed's `--logins` refuses remote (D-60), so the 40 real logins (players.id = Auth user id) need a separate, owner-approved script. Moving the demo match is a rerun with a new `--demo-cutoff-in`.
 - Smoke ids start with `5a0c0000`, shirts 98 and 99, emails `smoke-one@pintfc.test` and `smoke-two@pintfc.test`; a full seed will not clash with them.
 - A test that scans tracked files (T-14) must be run after staging (session 17 lesson): `tests/smoke/smoke.test.ts` is new and holds no token-shaped values.
+
+## session-19 — release-deploy (2026-11-15)
+
+**STATUS: IN PROGRESS when written.** Not done yet: the full exit gate (`npm run gate`), `npm run test:smoke` in this session, the owner's review of the preview, and the production deploy. Update this section at the end.
+
+**Done**
+- Step 1: `REL-1` (`tests/unit/release.test.ts`) and `scripts/release-check.mjs`. The owner reported step 1 done and verified (REL-1 passes 6/6; the two new files are untracked and must not be committed yet). Both files are still untracked.
+- Step 2: Vercel project `pintfc`, folder linked (D-143), `vercel.json` (D-144), `.vercelignore` (D-145), environment variables for Production and Preview (D-146).
+- The first deployment was forced to production and failed (D-144). A preview deploy succeeded (D-147): `https://pintfc-msw3osu3p-sabit-pintfc.vercel.app`.
+- The real Supabase project was seeded with the fake demo data, without logins (D-141).
+- Preview checks with `vercel curl` and a cookie test with the smoke user (D-148, D-149).
+
+**Proof** (agent-run, shown as printed; none of it is the exit gate)
+- Project: `pintfc`, id `prj_QadtIIpRosfMqOBhQPz5oJrVpROy`, team `sabit-pintfc` (the CLI shows plan `hobby`). `vercel link` wrote `.vercel/`; `git check-ignore -v` shows `.vercel/project.json` ignored by `.gitignore:5` and `.env.local` by `.gitignore:3`; after the owner's instruction, `git diff .gitignore` printed no difference.
+- First deploy: header "Production", `https://pintfc-jr0l91v04-sabit-pintfc.vercel.app`, inspect id `BaZnGpmomiF4gDJtAX3iNrzxu5Vi`, error `[STATIC_BUILD_NO_OUT_DIR] No Output Directory named "public" found after the Build completed`. The dry run before it printed `"framework": {"name": "Other", "slug": null}`; after `vercel.json` it printed `Next.js` / `nextjs`. A no-cookie HEAD request to that URL returned `302` with a `Location` on `vercel.com/sso-api`.
+- `.vercelignore` lines: `.env`, `.env.*`, `!.env.example`, `credentials.local.csv`, `screenshots/`, `test-results/`, `playwright-report/`, `supabase/.temp/`. Dry run before the preview: 196 files to upload (195 before `vercel.json`), 43 ignored, `.env.local` among the ignored. Vercel docs pages used: "Build Features" (ignored files and folders), ".vercelignore" and "vercel deploy".
+- Env vars: `vercel env ls` shows 8 rows (`DATABASE_URL` Secret; `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `AUTH_ADAPTER` Config; each for Preview and Production). Pull of production: the `AUTH_ADAPTER` line is `41 55 54 48 5f 41 44 41 50 54 45 52 3d 22 73 75 70 61 62 61 73 65 22 0a` (value `supabase`, 8 bytes, no `0d`/`0a` inside). `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`: pulled length 40 and 46, equal to `.env.local`, byte-identical, last 2 bytes `636f` and `4e49` (neither `0d` nor `0a`).
+- Preview deploy: Next.js 16.4.6 (Turbopack), "Compiled successfully in 7.1s", 18 routes (all dynamic) plus the proxy/middleware, "Build Completed in /vercel/output [35s]". `dpl_Bdc6VWDqTn2JqdmWdkPQquhU72ev`, `readyState: READY`, `deploymentProtection: ["vercel_authentication"]`; `npx vercel inspect` printed `target preview` and `status ● Ready`.
+- Seed (exit 0): `Seeded (demo match cutoff in 2d): {"seasons":2,"competitions":3,"venues":4,"teams":9,"players":43,"matches":18,"results":12,"player_match_stats":154,"standings_snapshots":1,"standings_rows":8,"trainings":8,"rsvps":1}`. The ref check printed only `true`. Demo match from `/api/home`: kickoff 2026-11-17T21:50:11Z, cutoff 2026-11-17T19:50:11Z.
+- `vercel curl` on the preview, no cookie: `/api/health` 200 `{"ok":true}`; `/api/me` 401 `{"error":{"code":"UNAUTHENTICATED","message":"Sign in to continue.","request_id":"<uuid>"}}`; `/api/home` 200 before the seed with `next_match` null, `record` null, `latest_results` `[]`, `standings` null, and after the seed with `next_match` filled (`rsvp_open` true), `record` 10 played / 6 won / 2 drawn / 2 lost / 19 for / 12 against, 5 `latest_results`, 8 `standings.rows`. The real rows show `DATABASE_URL` on Vercel reaches the real Supabase project.
+- Preview cookie test (agent-run, verbatim stdout), run once with `PREVIEW_COOKIE_WRITE=yes`, exit 0, API level only, not a real browser:
+    (node:20252) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+    (Use `node --trace-deprecation ...` to show where the warning was created)
+    PASS  0 vercel curl GET /api/health is 200 with {"ok":true}  (status 200)
+    PASS  1 smoke-one exists in Supabase Auth  (status 200)
+    PASS  2 random password set (value never printed)  (status 200)
+    PASS  3 sign-in answered 200 with the smoke player id  (status 200)
+    PASS  4a cookie pf_session is set
+    PASS  4b HttpOnly
+    PASS  4c Secure
+    PASS  4d SameSite=Lax  (SameSite=Lax)
+    PASS  4e Path=/
+    PASS  4f Max-Age is 1..28800  (Max-Age=3600)
+    PASS  4g value is a 3-part JWT with sub = smoke-one  (length 800)
+          other cookies set (names only): none
+    PASS  5 GET /api/me with the cookie is 200  (status 200, keys: player)
+    PASS  6 sign-out is 204 and clears pf_session (empty value, Max-Age=0)  (status 204)
+    PASS  7 GET /api/me with the old cookie is 401 UNAUTHENTICATED  (status 401)
+    8b smoke-one password re-randomized and discarded (status 200)
+    RESULT: all checks passed
+  The first version of the script stopped at step 0 with exit 2 before any write (`-K` is not supported by `vercel curl`); the changes are in `preview-cookie-check.diff.txt` in the scratchpad.
+- NOT run in this session so far: `npm run gate`, `npm run test:smoke`, the unit test command of the plan's exit gate, any production deploy.
+
+**Decisions** (D-141 to D-150, also in `DECISIONS.md`)
+- The remote seed ran without logins (supersedes D-138); the 40 real logins are a known gap (D-142). The first Vercel deployment of a project is always production and it failed on the framework preset; `vercel.json` sets Next.js (D-144). `.vercelignore` because `.gitignore` patterns are not applied on upload (D-145). Env vars through Git Bash `printf`, `--type config` for the readable ones (D-146). Preview with `--environment=preview` (D-147). `vercel curl` created a bypass secret (D-148). Cookie test with the smoke user only (D-149). The smoke suite cannot target a deployment URL (D-150).
+
+**Known gaps**
+- No real logins for the 40 players (D-142). The conflict between D-16 / `architecture.md:37` and `seed.mjs` is a HYPOTHESIS until the owner verifies it.
+- HYPOTHESIS: 41 of the 43 players come from the seed (41 + the 2 smoke players); not checked with a query. The seed totals also include the session 18 smoke rows (2 seasons, 1 RSVP, 18 matches).
+- HYPOTHESIS: `DATABASE_URL` on Vercel has no trailing newline (a Secret cannot be read back; `/api/home` returning real rows shows the URL works).
+- HYPOTHESIS: the 46-character `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the new publishable key format (`tests/smoke/smoke.test.ts:30` calls it "the new publishable key (sb_publishable_...)"); the value was not printed or inspected.
+- HYPOTHESIS: no production alias or domain exists; not re-checked with `vercel project ls` or `vercel ls` after the failed first deploy.
+- HYPOTHESIS: smoke-one has no other open session (the script ends its own; not counted with a query this time).
+- The cookie test is API level only (D-149): not a real browser, reached through the protection bypass, one smoke user, no sign-out-all, no token expiry.
+- The demo match RSVP cutoff is 2026-11-17T19:50:11Z; after that the page shows RSVP closed until the seed is re-run with a new `--demo-cutoff-in`.
+- `vercel.json`, `.vercelignore`, `scripts/release-check.mjs` and `tests/unit/release.test.ts` are untracked; a commit needs the owner's "go".
+- Preview build log warnings, left as they are: the `middleware` file convention is deprecated for `proxy`; npm ERESOLVE peer-dependency notes for `eslint-config-next` with eslint 10.14.0; two packages with install scripts not covered by `allowScripts`.
+- The project's Node version is shown as 26.x by `vercel project ls`; the owner states local is 24.16; the agent did not verify either.
+
+**Open items to close at the end of the session** (owner actions, or owner-approved)
+1. Revoke the "Protection Bypass for Automation" secret that `vercel curl` created on project `pintfc` (Deployment Protection in the project settings, or the CLI command it printed: `vercel project protection disable prj_QadtIIpRosfMqOBhQPz5oJrVpROy --protection-bypass --protection-bypass-secret <secret>`).
+2. Revoke the Vercel token `pintfc-s19` (named by the owner; used as `VERCEL_TOKEN`).
+3. Remove the failed deployment record by hand (the agent may not delete): `pintfc-jr0l91v04-sabit-pintfc.vercel.app`, inspect id `BaZnGpmomiF4gDJtAX3iNrzxu5Vi`.
+4. Check the Node version: the project setting shows 26.x, the owner says local is 24.16; decide whether to pin it (the setting is on the project, not in the repo).
+5. Files the agent left outside the repo, which it cannot delete: in the scratchpad `prod-check.env`, `prod-check2.env`, `prod-check3.env`, `prev-check2.env` (output of `vercel env pull`; secrets appear only as the placeholder `[SENSITIVE]`; HYPOTHESIS: they may contain a Vercel-issued token, not inspected), the dry-run and deploy output files and `preview-cookie-check*.mjs`; in the Git Bash `/tmp` the files `o.txt` and `b.out` (CLI status text, no values).
+6. HYPOTHESIS: the scratchpad stderr captures `t0a.err`, `t0b.err`, `t1.err`, `t2.err` (and any other stderr capture, such as the `.err` files of the `vercel curl` and deploy runs) may contain the Protection Bypass secret printed by `vercel curl`; none was inspected for it. Revoking the secret (item 1) makes any copy useless. The agent cannot delete these files; the owner may remove them by hand.
+
+**Next session needs to know**
+- Preview URL `https://pintfc-msw3osu3p-sabit-pintfc.vercel.app` (Deployment Protection on); project `pintfc` in team `sabit-pintfc`, id `prj_QadtIIpRosfMqOBhQPz5oJrVpROy`. Production: nothing live (D-144, see its HYPOTHESIS).
+- Never run `npx vercel deploy` without checking the target: use `--environment=preview` and read the CLI header ("Preview" or "Production").
+- To check the preview without a browser: `npx vercel curl <full url>/api/health --scope sabit-pintfc -- -s -i`. `-K` is rejected; keep secrets out of argv with `-H @-` or `--data-binary @-` (one stdin use per command).
+- To move the demo match: `node scripts/seed.mjs --allow-remote --demo-cutoff-in <n>` with `DATABASE_URL` from `.env.local` in a shell variable, never on the command line, owner "yes" first; never with `--logins` (D-60).
+- The smoke user `smoke-one@pintfc.test` has no known password (random, discarded); `npm run test:smoke` with `SMOKE_WRITE=yes` sets a new one.
+- Still to do in session 19 per the plan: the exit gate (three commands), the owner's review of the preview and screenshots, and the production deploy as the very last step with the owner's explicit "yes".

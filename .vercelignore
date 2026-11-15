@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+credentials.local.csv
+screenshots/
+test-results/
+playwright-report/
+supabase/.temp/
