@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useId, useState } from 'react';
+import Crest from './Crest';
 
 /** The player shown in the account menu, or null for a visitor. The layout resolves it on the server. */
 export interface HeaderPlayer {
@@ -32,7 +33,7 @@ export default function Header({ player }: { player: HeaderPlayer | null }) {
     <header className="site-header" data-testid="site-header">
       <div className="header-bar">
         <Link href="/" className="brand">
-          <span className="crest" aria-hidden="true" />
+          <Crest />
           <span>PINT FC</span>
         </Link>
         <button

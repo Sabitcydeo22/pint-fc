@@ -36,7 +36,7 @@ Relationships: season 1─* competitions 1─* matches; matches *─1 teams (opp
 | `v_latest_results` | view | published league+friendly results, newest first (API limits 5), opponent, score, date | anon, authenticated |
 | `v_standings` | view | latest snapshot rows + `taken_on` | anon, authenticated |
 | `v_squad` | view | visible players: id, display name, position, shirt number | anon, authenticated |
-| `v_player_profile` | view | visible players; `photo_url`/`nationality`/stats columns are `CASE WHEN show_x THEN … END` | anon, authenticated |
+| `v_player_profile` | view | (the page uses `photo_url` only as "consented and has a picture"; it never renders the value, session 20c) visible players; `photo_url`/`nationality`/stats columns are `CASE WHEN show_x THEN … END` | anon, authenticated |
 | `rpc_me()` | fn | own id, name, status | authenticated |
 | `rpc_my_settings()` | fn | own consent flags + own email | authenticated |
 | `rpc_update_my_settings(…)` | fn | updates **own row only**, only the 4 consent flags | authenticated |

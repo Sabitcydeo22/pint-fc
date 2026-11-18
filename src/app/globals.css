@@ -158,13 +158,20 @@ a {
   letter-spacing: 0.04em;
   text-decoration: none;
 }
+/* the crest SVG (components/Crest.tsx): a white shield with navy details on the navy header */
 .crest {
-  display: inline-block;
+  --crest-shield: var(--on-fill);
+  --crest-detail: var(--primary);
+  display: block;
+  flex: none;
   width: 28px;
-  height: 28px;
-  border: 2px solid var(--on-fill);
-  border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
-  background: var(--on-fill);
+  height: 34px;
+}
+.crest-shield {
+  fill: var(--crest-shield);
+}
+.crest-detail {
+  fill: var(--crest-detail);
 }
 .nav-toggle {
   display: none;
@@ -262,8 +269,8 @@ a {
   font-weight: var(--weight-bold);
 }
 .footer-brand .crest {
-  border-color: var(--primary);
-  background: var(--primary);
+  --crest-shield: var(--primary);
+  --crest-detail: var(--on-fill);
 }
 .footer-links,
 .footer-social {
@@ -415,6 +422,46 @@ a {
   height: 24px;
 }
 
+/* jersey graphics and the player avatar (session 20c): navy shirt, white trim, text on top; never a figure */
+.jersey-fill {
+  fill: var(--primary);
+}
+.jersey-trim {
+  fill: var(--on-fill);
+}
+.avatar {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+.avatar-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.avatar-initials,
+.avatar-number {
+  position: absolute;
+  left: 0;
+  right: 0;
+  color: var(--on-fill);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+  text-align: center;
+}
+.avatar-initials {
+  top: 30%;
+  font-size: var(--text-xl);
+}
+.avatar-number {
+  top: 55%;
+  font-size: var(--text-lg);
+}
+.avatar-solo .avatar-number {
+  top: 36%;
+  font-size: var(--text-2xl);
+}
+
 /* chips: the RSVP status */
 .chip {
   display: inline-block;
@@ -536,10 +583,28 @@ a {
   color: var(--ink);
   text-decoration: none;
 }
-.squad-number {
-  min-width: 28px;
+/* the shirt number on a small jersey (components/Jersey.tsx) */
+.squad-badge {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+.squad-badge-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.squad-badge-number {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  color: var(--on-fill);
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  color: var(--primary);
+  line-height: 1.2;
+  text-align: center;
 }
 .squad-name {
   min-width: 0;

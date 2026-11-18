@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+  <title>PINT FC crest</title>
+  <path fill="#0b2a52" d="M10 8 H90 V62 Q90 96 50 114 Q10 96 10 62 Z"/>
+  <rect fill="#ffffff" x="22" y="18" width="16" height="16"/>
+  <rect fill="#ffffff" x="42" y="18" width="16" height="16"/>
+  <rect fill="#ffffff" x="62" y="18" width="16" height="16"/>
+  <polygon fill="#eef3f9" points="10,44 50,68 90,44 90,56 50,80 10,56"/>
+</svg>

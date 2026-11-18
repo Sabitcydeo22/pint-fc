@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import Crest from './Crest';
 
 export default function Footer() {
   return (
     <footer className="site-footer" data-testid="site-footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <span className="crest" aria-hidden="true" />
+          <Crest />
           <span>PINT FC</span>
         </div>
         <p className="muted">New Jersey, USA</p>

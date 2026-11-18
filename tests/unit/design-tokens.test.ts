@@ -28,6 +28,10 @@ const TSX_FILES = [
   'src/app/settings/page.tsx',
   'src/app/sign-in/page.tsx',
   'src/components/LiveClock.tsx',
+  // session 20c
+  'src/components/Crest.tsx',
+  'src/components/Jersey.tsx',
+  'src/components/PlayerAvatar.tsx',
 ];
 
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');

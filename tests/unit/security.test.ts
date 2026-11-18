@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from '../../src/middleware';
+import { config as middlewareConfig, middleware } from '../../src/middleware';
 // @ts-expect-error TS7016 plain .mjs module
 import nextConfig from '../../next.config.mjs';
 
@@ -235,7 +235,19 @@ describe('CSP-1 Content-Security-Policy header', () => {
     expect(script).toMatch(/^script-src 'self' 'nonce-[A-Za-z0-9+/=_-]{16,}' 'strict-dynamic'$/);
     expect(script).not.toMatch(/unsafe-inline|https?:|\*/);
     expect(directiveOf(policy, 'style-src')).toBe("style-src 'self' 'unsafe-inline'"); // inline style attributes (D-113)
-    expect(directiveOf(policy, 'img-src')).toMatch(/^img-src 'self'/);
+    // session 20c (D-157): images come from this site only (no https: hosts), plus data: URIs
+    expect(directiveOf(policy, 'img-src')).toBe("img-src 'self' data:");
+  });
+
+  it('CSP-4 [unit] the middleware matcher skips the image folder and the favicon, but still covers the pages', () => {
+    const matcher = middlewareConfig.matcher[0];
+    const covers = (p: string) => new RegExp(`^${matcher}$`).test(p);
+    for (const skipped of ['/img/placeholder-player.svg', '/img/placeholder-crest.svg', '/icon.svg', '/favicon.ico', '/api/health', '/_next/static/x.js']) {
+      expect(covers(skipped), `${skipped} must not run the middleware`).toBe(false);
+    }
+    for (const page of ['/', '/squad', '/players/abc', '/settings', '/fixtures/abc', '/sign-in', '/images-of-us']) {
+      expect(covers(page), `${page} must run the middleware`).toBe(true);
+    }
   });
 
   it('CSP-1 [unit] next.config.mjs adds only non-script directives (no default-src or script-src that could undo the nonce)', async () => {

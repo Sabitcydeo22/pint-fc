@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Jersey from '../../components/Jersey';
 import { getSquad } from '../../server/squad';
 import { POSITION_GROUPS } from './labels';
 
@@ -24,7 +25,10 @@ export default async function SquadPage() {
                 {group.map((p) => (
                   <li key={p.id}>
                     <Link href={`/players/${p.id}`} data-testid="squad-player" className="squad-card">
-                      <span className="squad-number">{p.shirt_number}</span>
+                      <span className="squad-badge">
+                        <Jersey className="squad-badge-art" />
+                        <span className="squad-badge-number">{p.shirt_number}</span>
+                      </span>
                       <span className="squad-name">{p.name}</span>
                     </Link>
                   </li>

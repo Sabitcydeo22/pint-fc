@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import PlayerAvatar from '../../../components/PlayerAvatar';
 import { POSITION_SINGULAR } from '../../squad/labels';
 import { loadProfile } from './data';
 
@@ -21,10 +22,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           ← Back to squad
         </Link>
       </p>
-      {player.photo_url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a small avatar from a data field, not an optimised asset
-        <img data-testid="player-photo" src={player.photo_url} alt={`Photo of ${player.name}`} width={120} height={120} style={{ maxWidth: '100%', height: 'auto', borderRadius: 8, background: 'var(--surface)' }} />
-      ) : null}
+      <PlayerAvatar name={player.name} shirtNumber={player.shirt_number} photo={Boolean(player.photo_url)} />
       <div className="stack-xs">
         <h1 data-testid="player-name">{player.name}</h1>
         <p data-testid="player-position">{POSITION_SINGULAR[player.position]}</p>

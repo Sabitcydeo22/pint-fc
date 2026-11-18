@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
+    "img-src 'self' data:", // D-157: pictures come from this site only (a real photo host would need a new decision)
   ].join('; ');
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('content-security-policy', csp);
@@ -39,5 +39,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/|_next/|favicon.ico).*)'],
+  // not the API, Next's own files, the static graphics in public/img/ or the favicon: they are plain files (no CSP, no no-store)
+  matcher: ['/((?!api/|_next/|img/|favicon.ico|icon.svg).*)'],
 };

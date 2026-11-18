@@ -348,7 +348,7 @@
 - Test ids: `page-squad`, `squad-group-GK|DEF|MID|FWD`, `squad-player`, `squad-empty`, `squad-loading`, `squad-error`; `page-player`, `player-name`, `player-position` (full word, e.g. "Goalkeeper"), `player-number`, `player-photo`, `player-nationality`, `player-stats`, `back-to-squad`, `not-found`, `player-loading`, `player-error`, `retry-button` (in the two error pages).
 - A new page with `loading.tsx` that must send a real 404 needs the check in a LAYOUT, as `players/[id]/layout.tsx` does (D-89).
 - `v_squad` is auto-updatable (plain single-table view): never grant it anything but `select`. The matrix and SQUAD-VIEWS-1 both guard that.
-- Missing `public/img/placeholder-player.svg`: a broken image for consented photos until a later session adds the file.
+- Missing `public/img/placeholder-player.svg`: a broken image for consented photos until a later session adds the file. (Fixed in session 20c: the file exists and the profile shows the local jersey.)
 
 ## session-11 — privacy-settings (2026-11-12)
 
@@ -593,7 +593,7 @@
 **Known gaps**
 - T-13 needs `.next/static` to exist (D-126).
 - T-14 and T-18 have the exceptions in D-124 and D-125.
-- `style-src 'unsafe-inline'` stays: injected CSS can restyle or cover the page. `img-src` allows `https:` (player photos), so an image request can still carry data out. Removing both needs the inline styles moved into CSS files.
+- `style-src 'unsafe-inline'` stays: injected CSS can restyle or cover the page. `img-src` allows `https:` (player photos), so an image request can still carry data out. (The `img-src` half is closed in session 20c: `'self' data:` only, D-166.) Removing both needs the inline styles moved into CSS files.
 - Contrast, 320 px and screenshots cover states reachable without breaking the server: loading skeletons and the server-rendered squad error / empty states are not captured (no mock point for server-rendered pages).
 - T-15 saves nothing: names and the reason come from a mocked attendance response (React escaping is what is under test); no real RSVP write with markup is made.
 - T-10 does not check that the nonce values inside one page agree with each other (CSP-3 covers the nonce per request).
@@ -742,7 +742,7 @@
 
 ## session-20a — design: tokens and spacing foundation (2026-11-18)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Session 20 is the design session (not in the plan files; see PLAN.md "Design sessions" and D-157 to D-161). 20a changes no behaviour, API, database or test id. No install, nothing deleted, nothing committed or pushed, no image added.
+**STATUS: DONE, committed as `8da16f4` (not pushed).** Session 20 is the design session (not in the plan files; see PLAN.md "Design sessions" and D-157 to D-161). 20a changes no behaviour, API, database or test id. No install, nothing deleted, no image added; the commit was made after the owner's "go" and never pushed by the agent.
 
 **Done**
 - `src/app/globals.css` rewritten around tokens: colours (navy `--primary`, one bright-blue `--accent`, `--focus` and `--focus-on-dark`), spacing `--space-1..7` (4/8/12/16/24/32/48), type `--text-sm..3xl` (14/16/20/24/32/48), weights 400 and 700 only. New `.stack` / `.stack-sm` / `.stack-xs` (one gap between sections: 16 / 12 / 8 px), `.btn-accent`, `.chip`, and classes for stats, results, mini table, squad and the event page. The `<style>` string of `Attendance.tsx` moved into this file.
@@ -759,16 +759,16 @@
 - Owner's answers recorded; palette and scales (D-157, D-158); small visible changes from the scales (D-159); guard scope is the 20a file list and five files outside it still have inline styles (D-160); e2e written after the CSS, plan-check unaffected (D-161).
 
 **Known gaps and UNKNOWN**
-- `.card` is still `max-width: 420px` and the page is still 960 px: sessions 20d (desktop). Defects 1, 2 and 4 (table at 320 px, missing placeholder SVG, "Not going" wrapping) are NOT fixed yet: 20b and 20c.
+- `.card` is still `max-width: 420px` and the page is still 960 px: sessions 20d (desktop). Defects 1 and 4 (table at 320 px, "Not going" wrapping) were fixed in 20b (`b0a080a`) and defect 2 (missing placeholder SVG) in 20c.
 - The two mutation backups (`globals.css.orig`, `page.tsx.orig`) are in the scratchpad; the agent may not delete them.
-- UNKNOWN: whether `squad/loading.tsx`, `players/[id]/loading.tsx`, `SettingsForm.tsx`, `sign-in/page.tsx` and `LiveClock.tsx` should join the guard (D-160). UNKNOWN: how the new colours look to the eye (no screenshots reviewed in 20a; the screenshot spec still writes 390 and 320 px files only).
+- RESOLVED in 20b: `squad/loading.tsx`, `players/[id]/loading.tsx`, `SettingsForm.tsx`, `sign-in/page.tsx` and `LiveClock.tsx` joined the guard (D-160, D-162). UNKNOWN: how the new colours look to the eye (no screenshots reviewed in 20a; the screenshot spec still writes 390 and 320 px files only).
 - The smoke players question stays UNKNOWN (production untouched).
 
 **Next session needs to know**
-- 20b: fix the league table at 320 px (`MiniTable.tsx` `.mt` / `.mt-team`: no mid-word breaks, narrower number columns) and the "Not going" wrap (`.fx-choices` / `.fx-choice` in `globals.css`: stack below 480 px, `white-space: nowrap`), and add `tests/e2e/layout-matrix.spec.ts` for 320/390/768/1280. Tests first.
+- DONE in 20b (`b0a080a`): fix the league table at 320 px (`MiniTable.tsx` `.mt` / `.mt-team`: no mid-word breaks, narrower number columns) and the "Not going" wrap (`.fx-choices` / `.fx-choice` in `globals.css`: stack below 480 px, `white-space: nowrap`), and add `tests/e2e/layout-matrix.spec.ts` for 320/390/768/1280. Tests first.
 - Spacing and type values must come from tokens; extend `TSX_FILES` in `tests/unit/design-tokens.test.ts` when a session touches a new file.
 - `.stack > *` resets only `margin-block`, so a card keeps `margin-inline: auto`. Utilities sit AFTER `.field` in `globals.css` on purpose (so the stack beats `.field`'s margin).
-- 20c needs `public/img/` (the folder does not exist), `middleware.ts` matcher and CSP `img-src 'self' data:` (outside the 20a list; they were approved in the plan, D-157).
+- DONE in 20c: `public/img/` (the folder did not exist), `middleware.ts` matcher and CSP `img-src 'self' data:` (outside the 20a list; they were approved in the plan, D-157).
 
 ## session-20b — design: small phones, answers, tokens in the last files (2026-11-18)
 
@@ -787,3 +787,28 @@
 **Next session needs to know**
 - The 20b gate passed and 20b is committed (see `git log`); nothing is left to re-run or approve for it. Next: 20c (no-people assets: `public/img/*.svg`, crest, jersey, initials avatar, CSP `img-src 'self' data:`), planned first and started only on the owner's approval. If the machine is low on memory, e2e can hang for hours: free memory before running the gate.
 - Backups of the mutated files are in the scratchpad (`globals.b.orig`, `signin-page.tsx.orig`, `settings-page.tsx.orig`, `liveclock.tsx.orig`); the agent may not delete them.
+
+## session-20c — design: no-people graphics (2026-11-18)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Owner's answers: D-166. Decisions D-166 to D-168. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image downloaded (every graphic is hand-written SVG).
+
+**Done**
+- `public/img/placeholder-player.svg` (flat shirt, no body) and `public/img/placeholder-crest.svg` (shield, three bars, chevron), `src/app/icon.svg` (favicon, same shield). `Crest`, `Jersey`, `PlayerAvatar` components and `src/lib/initials.ts`. Header and footer use `Crest`; squad cards show a small jersey with the number only; the profile shows `player-photo` (the local jersey file, only for a consented player) or `player-avatar` (initials and number). The database `photo_url` is never rendered. Defect 2 (broken photo) is fixed.
+- `src/middleware.ts`: CSP `img-src 'self' data:` (no `https:`) and the matcher skips `img/` and `icon.svg`. `globals.css`: crest, jersey, avatar and badge rules. The stale 20a and 20b lines in this file were fixed.
+- Docs: DECISIONS D-166 to D-168, screens, test-map, data, PLAN.
+
+**Proof**
+- RED first: unit 27 failed (assertions: files missing, `expected 'img-src \'self\' data: https:' to be 'img-src \'self\' data:'`, `expected '' to be 'ÉZ'` against the initials stub, `public/ exists and is not empty: expected 0 to be greater than 0`); e2e 8 failed (404 for both SVGs, `loaded: false` for the consented image, no avatar, image requests with an error status; the favicon and contrast tests failed by timeout because `link[rel=icon]` and the avatar did not exist).
+- After the code: unit 106 passed (17 files), e2e assets 8/8.
+- Exit gate `npm run gate`, exit 0: typecheck and lint exit 0 (no warnings); unit 17 files / 106 tests; db 16 / 72; api 11 / 59; e2e 194 passed (186 before + 8); `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`.
+- Mutation check (only existing files edited; SHA-256 and `fc /b` identical after every restore): `https:` back in the CSP → CSP-1; `img/` out of the matcher → CSP-4 (unit) and ASSET-5 (e2e: static files `no-store`); a `<text>` and a non-token colour in the SVG → ASSET-2 and ASSET-3; initials return one letter → 8 INITIALS-1 cases; an external image URL in the avatar → ASSET-4, ASSET-6, ASSET-7; the page rendering `photo_url` → ASSET-4 (two checks); `player-avatar` test id removed → ASSET-6 and ASSET-9; squad badge class renamed → ASSET-8; footer crest removed → ASSET-8; navy initials on the navy shirt → ASSET-9 alone (ratio 1, expected at least 4.5).
+- Renders for the owner to LOOK at (a test cannot tell a shirt from a person), in `screenshots/`: `svg-placeholder-player-320.png`, `svg-placeholder-crest-320.png`, `svg-icon-320.png`, `avatar-consented-390.png`, `avatar-initials-390.png`. I looked at them: a plain shirt, a shield, no body or head.
+
+**Known gaps and UNKNOWN**
+- The production database already holds `/img/placeholder-player.svg`, so a later deploy fixes the live site with no data change; no deploy was made (needs the owner's "po").
+- UNKNOWN: whether axe would flag the white text over the SVG shirt (ASSET-9 and the token pair unit tests cover the contrast instead; the existing a11y spec passed). UNKNOWN: how Next names the favicon in production (the test follows the `<link rel="icon">` href).
+- Cuffs and the collar trim are white, so on the white page they are hardly visible; the shirt still reads as a shirt. The design can change in 20e.
+- `.card` is still capped at 420 px (20d). The mutation backups (`c-*.orig`) are in the scratchpad; the agent may not delete them.
+
+**Next session needs to know**
+- 20d (desktop layout up to 1200 px, grid) is next; plan first. Any new file with styles joins `TSX_FILES` in `tests/unit/design-tokens.test.ts`. New graphics must stay plain shapes with token colours (ASSET-1 to ASSET-4); the only `<img>` allowed is the local jersey in `PlayerAvatar.tsx`.
