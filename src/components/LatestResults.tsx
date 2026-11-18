@@ -53,7 +53,7 @@ export default function LatestResults() {
   };
 
   return (
-    <section aria-labelledby="latest-results-title" aria-busy={state.kind === 'loading'} className="card" style={{ marginTop: 16 }}>
+    <section aria-labelledby="latest-results-title" aria-busy={state.kind === 'loading'} className="card stack-sm">
       <h2 id="latest-results-title">Latest results</h2>
       {state.kind === 'loading' ? (
         <p className="muted" data-testid="results-loading">
@@ -69,24 +69,16 @@ export default function LatestResults() {
       ) : state.rows.length === 0 ? (
         <p data-testid="results-empty">No results yet</p>
       ) : (
-        <ol data-testid="latest-results" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+        <ol data-testid="latest-results" className="result-list">
           {state.rows.map((row) => {
             const o = outcome(row);
             return (
-              <li
-                key={row.match_id}
-                data-testid="result-row"
-                style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px', minWidth: 0 }}
-              >
-                <span
-                  data-testid="result-outcome"
-                  aria-label={o.word}
-                  style={{ display: 'inline-block', minWidth: 28, padding: '2px 8px', borderRadius: 6, background: o.color, color: '#ffffff', fontWeight: 800, textAlign: 'center' }}
-                >
+              <li key={row.match_id} data-testid="result-row" className="result-row">
+                <span data-testid="result-outcome" aria-label={o.word} className="result-outcome" style={{ background: o.color }}>
                   {o.letter}
                 </span>
-                <span style={{ flex: '1 1 8rem', minWidth: 0, fontWeight: 600 }}>{row.opponent}</span>
-                <span style={{ fontWeight: 800 }}>
+                <span className="result-opponent">{row.opponent}</span>
+                <span className="bold">
                   {row.goals_for}–{row.goals_against}
                 </span>
                 <time className="muted" dateTime={row.played_on}>

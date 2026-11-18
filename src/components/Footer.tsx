@@ -8,9 +8,7 @@ export default function Footer() {
           <span className="crest" aria-hidden="true" />
           <span>PINT FC</span>
         </div>
-        <p className="muted" style={{ margin: 0 }}>
-          New Jersey, USA
-        </p>
+        <p className="muted">New Jersey, USA</p>
         <nav aria-label="Footer">
           <ul className="footer-links">
             <li>

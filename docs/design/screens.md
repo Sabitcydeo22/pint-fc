@@ -1,21 +1,30 @@
 # Screens
 
-Look: **"Sport", light, single theme** (owner's pick). Our own design, phone first. Design width 320–430 px; at ≥ 768 px the content centres at max 960 px. Rules for every page:
+Look: **"Sport", light page with a dark navy header and hero** (owner's pick, session 20: white / pale blue-gray page, navy text, ONE bright-blue accent for the single most important action on a page, bold and sporty, no gradients). Our own design, phone first. Design width 320–430 px. Content width: 960 px until session 20d, then up to 1200 px with a grid inside it (owner's answer, session 20). Rules for every page:
 - **No horizontal scroll at 320 px** (AC-5.4): fluid widths, `min-width: 0` on flex/grid children, long names wrap/truncate with `overflow-wrap:anywhere`, tables become stacked rows or fit 320 px.
 - **WCAG AA contrast** (AC-5.2): tokens below are chosen for ≥ 4.5:1 text; axe runs on every page. Never colour alone (highlighted table row also has a "PINT FC" bold label and a left bar).
-- Touch targets ≥ 44 px. Visible focus ring (3 px, `#C8410B` on white ≥ 3:1). Semantic landmarks, one `h1` per page, buttons are `<button>`.
+- Touch targets ≥ 44 px. Visible focus ring (3 px, `--focus` ≥ 3:1 on the page and on cards; `--focus-on-dark` white on the navy header). Semantic landmarks, one `h1` per page, buttons are `<button>`.
+- **People content rule (owner, not negotiable):** no photos, illustrations, icons or stock images of people anywhere. Graphics only: crest, flat jersey shapes, pitch lines, geometric patterns, large type. Player avatars are initials plus shirt number (session 20c).
+- **One scale** (session 20a, enforced by `tests/unit/design-tokens.test.ts`): spacing only from the tokens below, type sizes only from the type tokens, two weights, colours only from tokens, the accent only on `.btn-accent`.
 - Text is in the club time zone with its label (EST/EDT).
 
-## Tokens (Sport, light)
-| Token | Value | Use | Contrast on white |
+## Tokens (Sport, light page, navy header, session 20a)
+Own palette, not taken from any club or brand. Ratios are computed by `tests/unit/design-tokens.test.ts` (WCAG relative luminance).
+| Token | Value | Use | Contrast |
 |---|---|---|---|
-| `--ink` | `#0B1B2B` | body text | ~17:1 |
-| `--muted` | `#4A5A6B` | secondary text | ~7:1 |
-| `--primary` | `#0B3A75` | header, links, buttons (white text) | ~11:1 |
-| `--accent` | `#C8410B` | highlights, focus, "closing soon" | ~5:1 |
-| `--bg` / `--surface` | `#FFFFFF` / `#F1F5FA` | page / cards | — |
-| `--ok` / `--warn` / `--bad` | `#0F6B3A` / `#8A5300` / `#B3261E` | Going / Maybe / Not going (each also has a label and icon) | ≥ 5:1 |
-Font: system UI stack (fast, no download). Base 16 px, line height 1.5.
+| `--ink` | `#0B1F3A` | body text (navy) | 16.5:1 on white, 14.8:1 on `--surface` |
+| `--muted` | `#44546A` | secondary text, "RSVP closed" chip | 7.7:1 on white, 6.9:1 on `--surface` |
+| `--primary` | `#0B2A52` | header and footer bar, links, buttons (white text) | 14.3:1 on white; white on it 14.3:1 |
+| `--accent` | `#0A5CFF` | the ONE most important action per page (`.btn-accent`; home: "Going / Not going"), white text | 5.3:1 against white and white text on it 5.3:1 |
+| `--bg` / `--surface` | `#FFFFFF` / `#EEF3F9` | page / cards | — |
+| `--ok` / `--warn` / `--bad` | `#0F6B3A` / `#8A5300` / `#B3261E` | Going / Maybe / Not going and Win / Draw / Loss (always with a text label; status colours, not accent) | ≥ 6.3:1 with white text |
+| `--on-fill` | `#FFFFFF` | text on any filled colour | — |
+| `--on-dark-muted` | `#C9D6EA` | secondary text on the navy | 9.7:1 on `--primary` |
+| `--focus` / `--focus-on-dark` | `#0848C4` / `#FFFFFF` | focus ring on page and cards / on the navy header | 7.7:1 on white, 6.9:1 on `--surface` / 14.3:1 on `--primary` |
+
+Spacing scale (the only values for padding, margin and gap): `--space-1..7` = 4, 8, 12, 16, 24, 32, 48 px. Sections of a page sit in a `.stack` (gap 16); the inside of a card is `.stack-sm` (12) or `.stack-xs` (8).
+Type scale: `--text-sm..3xl` = 14, 16, 20, 24, 32, 48 px (`h1` 32, `h2` 24, `h3` 20). Two weights: 400 and 700 (`--weight-regular`, `--weight-bold`).
+Font: system UI stack (fast, no download). Base 100% (16 px by default), line height 1.5.
 
 ## Shared chrome
 - **Header** (`data-testid="site-header"`): crest placeholder, "PINT FC", nav links Home · Squad, and either `sign-in-link` or `account-menu` (name, My settings, `sign-out-button`, `sign-out-all-button`). Collapses to a menu button below 480 px (`nav-toggle`).

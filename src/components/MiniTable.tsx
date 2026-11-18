@@ -31,9 +31,6 @@ async function fetchTable(): Promise<State> {
 
 const gd = (n: number) => (n > 0 ? `+${n}` : String(n));
 
-const cell = { padding: '8px 4px', textAlign: 'right' as const };
-const head = { ...cell, fontWeight: 600, fontSize: '0.875rem', borderBottom: '2px solid var(--muted)' };
-
 export default function MiniTable() {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
@@ -53,7 +50,7 @@ export default function MiniTable() {
   };
 
   return (
-    <section aria-labelledby="mini-table-title" aria-busy={state.kind === 'loading'} className="card" style={{ marginTop: 16 }}>
+    <section aria-labelledby="mini-table-title" aria-busy={state.kind === 'loading'} className="card stack-sm">
       <h2 id="mini-table-title">League table</h2>
       {state.kind === 'loading' ? (
         <p className="muted" data-testid="table-loading">
@@ -75,11 +72,7 @@ export default function MiniTable() {
             {`As of ${formatTakenOn(state.takenOn)}`}
           </p>
         ) : null}
-        <table
-          data-testid="mini-table"
-          aria-labelledby="mini-table-title"
-          style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}
-        >
+        <table data-testid="mini-table" aria-labelledby="mini-table-title" className="mt">
           <colgroup>
             <col style={{ width: '2.5rem' }} />
             <col />
@@ -89,19 +82,19 @@ export default function MiniTable() {
           </colgroup>
           <thead>
             <tr>
-              <th scope="col" style={head}>
+              <th scope="col" className="mt-cell mt-head">
                 Pos
               </th>
-              <th scope="col" style={{ ...head, textAlign: 'left' }}>
+              <th scope="col" className="mt-cell mt-head mt-team">
                 Team
               </th>
-              <th scope="col" style={head}>
+              <th scope="col" className="mt-cell mt-head">
                 P
               </th>
-              <th scope="col" style={head}>
+              <th scope="col" className="mt-cell mt-head">
                 GD
               </th>
-              <th scope="col" style={head}>
+              <th scope="col" className="mt-cell mt-head">
                 Pts
               </th>
             </tr>
@@ -112,27 +105,27 @@ export default function MiniTable() {
                 key={row.position}
                 // our row: its own test id, a thick left bar (a border, so it survives high-contrast modes) and a bold label
                 data-testid={row.is_us ? 'table-row-us' : 'table-row'}
-                style={row.is_us ? { borderLeft: '6px solid var(--accent)', background: 'var(--surface)' } : undefined}
+                className={row.is_us ? 'mt-us' : undefined}
               >
-                <td data-testid="table-pos" style={cell}>
+                <td data-testid="table-pos" className="mt-cell">
                   {row.position}
                 </td>
-                <td style={{ ...cell, textAlign: 'left', overflowWrap: 'anywhere' }}>
+                <td className="mt-cell mt-team">
                   {row.is_us ? (
-                    <strong data-testid="table-us-label" style={{ fontWeight: 800 }}>
+                    <strong data-testid="table-us-label" className="bold">
                       {row.team}
                     </strong>
                   ) : (
                     row.team
                   )}
                 </td>
-                <td data-testid="table-played" style={cell}>
+                <td data-testid="table-played" className="mt-cell">
                   {row.played}
                 </td>
-                <td data-testid="table-gd" style={cell}>
+                <td data-testid="table-gd" className="mt-cell">
                   {gd(row.goal_difference)}
                 </td>
-                <td data-testid="table-points" style={{ ...cell, fontWeight: 700 }}>
+                <td data-testid="table-points" className="mt-cell bold">
                   {row.points}
                 </td>
               </tr>

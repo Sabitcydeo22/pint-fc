@@ -36,20 +36,7 @@ interface Loaded {
   clock: ServerClock;
 }
 
-const CSS = `
-.fx-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.fx-choice{min-height:44px;padding:8px 6px;border:2px solid var(--choice,var(--primary));border-radius:var(--radius,8px);background:#fff;color:var(--ink);font:inherit;font-weight:700;cursor:pointer;overflow-wrap:anywhere}
-.fx-choice[aria-pressed="true"]{background:var(--choice,var(--primary));color:#fff}
-.fx-choice:disabled{opacity:.6;cursor:not-allowed}
-.fx-counts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
-.fx-count{background:var(--surface);border-radius:var(--radius,8px);padding:8px 12px;min-width:0}
-.fx-count strong{display:block;font-size:1.75rem;line-height:1.2}
-.fx-list{list-style:none;margin:0 0 12px;padding:0}
-.fx-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface);min-width:0}
-.fx-name{min-width:0;overflow-wrap:anywhere}
-.fx-chip{flex:none;padding:2px 10px;border-radius:999px;font-weight:700;color:#fff;white-space:nowrap}
-@media (min-width:1200px){.fx-counts{grid-template-columns:repeat(4,minmax(0,1fr))}.fx-count strong{font-size:3.5rem}.fx-row{font-size:1.25rem}}
-`;
+// The styles of this page (.fx-*) live in src/app/globals.css, next to the tokens they use.
 
 const GROUPS: { answer: RsvpAnswer; label: string; color: string }[] = [
   { answer: 'going', label: 'Going', color: 'var(--ok)' },
@@ -100,14 +87,14 @@ export default function Attendance({ matchId }: { matchId: string }) {
   if (!loaded) {
     if (loading) {
       return (
-        <section aria-busy="true" data-testid="fixture-loading" className="card">
+        <section aria-busy="true" data-testid="fixture-loading" className="card stack-sm">
           <h1>Match</h1>
           <p className="muted">Loading…</p>
         </section>
       );
     }
     return (
-      <section data-testid="fixture-error" className="card">
+      <section data-testid="fixture-error" className="card stack-sm">
         <h1>Match</h1>
         <p role="alert">Something went wrong. Try again.</p>
         <button type="button" className="btn" data-testid="retry-button" onClick={retry}>
@@ -126,23 +113,19 @@ export default function Attendance({ matchId }: { matchId: string }) {
 
   return (
     <>
-      <style>{CSS}</style>
       <h1>
         <span className="muted">vs </span>
         {match.opponent}
       </h1>
-      <section aria-label="Match details" className="card">
-        <p className="muted" style={{ margin: 0 }}>
+      <section aria-label="Match details" className="card stack-xs">
+        <p className="muted">
           {match.competition} · {match.venue}
         </p>
-        <p style={{ margin: '4px 0' }}>
+        <p>
           Kickoff: <time dateTime={match.kickoff_at}>{formatKickoff(match.kickoff_at)}</time>
         </p>
-        <p style={{ margin: '4px 0' }}>
-          <span
-            data-testid="rsvp-status"
-            style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 999, fontWeight: 700, color: '#ffffff', background: open ? 'var(--ok)' : 'var(--muted)' }}
-          >
+        <p>
+          <span data-testid="rsvp-status" className={open ? 'chip chip-ok' : 'chip'}>
             {open ? 'Open' : 'RSVP closed'}
           </span>{' '}
           <span className="muted">
@@ -150,30 +133,28 @@ export default function Attendance({ matchId }: { matchId: string }) {
           </span>
         </p>
         {notOpen ? (
-          <p role="status" data-testid="match-not-open" style={{ fontWeight: 700, marginBottom: 0 }}>
+          <p role="status" data-testid="match-not-open" className="bold">
             {match.status === 'cancelled' ? 'This match was cancelled.' : match.status === 'played' ? 'This match has been played.' : 'This match has kicked off.'}
           </p>
         ) : null}
         {!notOpen && !open ? (
-          <p data-testid="rsvp-closed" style={{ fontWeight: 700, marginBottom: 0 }}>
+          <p data-testid="rsvp-closed" className="bold">
             RSVP is closed. You can still see who is coming.
           </p>
         ) : null}
       </section>
 
       {failed ? (
-        <section data-testid="fixture-error" className="card">
-          <p role="alert" style={{ margin: 0 }}>
-            Something went wrong. Showing older data.
-          </p>
+        <section data-testid="fixture-error" className="card stack-sm">
+          <p role="alert">Something went wrong. Showing older data.</p>
           <button type="button" className="btn" data-testid="retry-button" onClick={retry}>
             Try again
           </button>
         </section>
       ) : null}
 
-      <section aria-labelledby="counts-title">
-        <h2 id="counts-title" className="muted" style={{ fontSize: '1rem' }}>
+      <section aria-labelledby="counts-title" className="stack-sm">
+        <h2 id="counts-title" className="muted t-md">
           Who is coming
         </h2>
         <div className="fx-counts">
@@ -194,7 +175,7 @@ export default function Attendance({ matchId }: { matchId: string }) {
 
       {!notOpen ? <RsvpButtons matchId={match.id} open={open} me={me} onChanged={refreshQuietly} /> : null}
 
-      <section aria-labelledby="list-title" className="card">
+      <section aria-labelledby="list-title" className="card stack-sm">
         <h2 id="list-title">Attendance</h2>
         {attendees.length === 0 ? (
           <p data-testid="attendees-empty">Nobody has answered yet</p>
@@ -203,8 +184,8 @@ export default function Attendance({ matchId }: { matchId: string }) {
             const rows = attendees.filter((a) => a.answer === g.answer);
             if (rows.length === 0) return null;
             return (
-              <div key={g.answer} role="group" aria-label={g.label}>
-                <h3 style={{ margin: '12px 0 4px' }}>
+              <div key={g.answer} role="group" aria-label={g.label} className="stack-xs">
+                <h3>
                   {g.label} ({rows.length})
                 </h3>
                 <ul className="fx-list">

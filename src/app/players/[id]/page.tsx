@@ -15,7 +15,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
 
   const stats = player.stats;
   return (
-    <main data-testid="page-player">
+    <main data-testid="page-player" className="stack">
       <p>
         <Link href="/squad" data-testid="back-to-squad">
           ← Back to squad
@@ -25,22 +25,18 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         // eslint-disable-next-line @next/next/no-img-element -- a small avatar from a data field, not an optimised asset
         <img data-testid="player-photo" src={player.photo_url} alt={`Photo of ${player.name}`} width={120} height={120} style={{ maxWidth: '100%', height: 'auto', borderRadius: 8, background: 'var(--surface)' }} />
       ) : null}
-      <h1 data-testid="player-name">{player.name}</h1>
-      <p data-testid="player-position" style={{ margin: '4px 0' }}>
-        {POSITION_SINGULAR[player.position]}
-      </p>
-      <p data-testid="player-number" style={{ margin: '4px 0' }}>
-        Shirt number <strong>{player.shirt_number}</strong>
-      </p>
-      {player.nationality ? (
-        <p data-testid="player-nationality" style={{ margin: '4px 0' }}>
-          Nationality: {player.nationality}
+      <div className="stack-xs">
+        <h1 data-testid="player-name">{player.name}</h1>
+        <p data-testid="player-position">{POSITION_SINGULAR[player.position]}</p>
+        <p data-testid="player-number">
+          Shirt number <strong>{player.shirt_number}</strong>
         </p>
-      ) : null}
+        {player.nationality ? <p data-testid="player-nationality">Nationality: {player.nationality}</p> : null}
+      </div>
       {stats ? (
-        <section aria-labelledby="player-stats-title" className="card" style={{ marginTop: 16, marginLeft: 0 }}>
+        <section aria-labelledby="player-stats-title" className="card stack-sm">
           <h2 id="player-stats-title">Season stats</h2>
-          <dl data-testid="player-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 12, margin: 0 }}>
+          <dl data-testid="player-stats" className="stat-grid">
             {(
               [
                 ['Appearances', stats.appearances],
@@ -49,11 +45,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                 ['Minutes', stats.minutes],
               ] as const
             ).map(([label, value]) => (
-              <div key={label} style={{ minWidth: 0 }}>
-                <dt className="muted" style={{ fontSize: '0.875rem' }}>
-                  {label}
-                </dt>
-                <dd style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{value}</dd>
+              <div key={label} className="stat">
+                <dt className="muted t-sm">{label}</dt>
+                <dd className="stat-value">{value}</dd>
               </div>
             ))}
           </dl>

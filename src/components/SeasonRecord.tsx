@@ -47,7 +47,7 @@ export default function SeasonRecord() {
   };
 
   return (
-    <section aria-labelledby="season-record-title" aria-busy={state.kind === 'loading'} className="card" style={{ marginTop: 16 }}>
+    <section aria-labelledby="season-record-title" aria-busy={state.kind === 'loading'} className="card stack-sm">
       <h2 id="season-record-title">Season record</h2>
       {state.kind === 'loading' ? (
         <p className="muted" data-testid="season-record-loading">
@@ -63,16 +63,11 @@ export default function SeasonRecord() {
       ) : state.record === null ? (
         <p data-testid="season-record-empty">No results yet</p>
       ) : (
-        <dl
-          data-testid="season-record"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 12, margin: 0 }}
-        >
+        <dl data-testid="season-record" className="stat-grid">
           {STATS.map((s) => (
-            <div key={s.id} style={{ minWidth: 0 }}>
-              <dt className="muted" style={{ fontSize: '0.875rem' }}>
-                {s.label}
-              </dt>
-              <dd data-testid={s.id} style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
+            <div key={s.id} className="stat">
+              <dt className="muted t-sm">{s.label}</dt>
+              <dd data-testid={s.id} className="stat-value">
                 {(state.record as SeasonRecordRow)[s.key]}
               </dd>
             </div>

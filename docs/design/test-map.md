@@ -85,5 +85,19 @@ Counted: 7 + 15 + 9 + 7 = **38**.
 | T-22 | DB | `T-22 rpc_rsvp_set rejects cancelled and past matches` |
 | T-23 | API | `T-23 oversized or unknown fields are rejected` |
 
+## Design tests (session 20, not acceptance checks; no owner in the check → session table)
+| Group | Level | Title |
+|---|---|---|
+| DESIGN-1 | U | `DESIGN-1 [unit] the spacing tokens are exactly 4, 8, 12, 16, 24, 32, 48 px` · `DESIGN-1 [unit] padding, margin and gap use only var(--space-N), 0 or auto (no one-off values)` |
+| DESIGN-2 | U | `DESIGN-2 [unit] exactly two weights (400, 700) and the type scale …` · every font-weight is a weight token · every font-size is a type token |
+| DESIGN-3 | U | `DESIGN-3 [unit] no hex, rgb() or named colour outside the :root token block` · every colour token is a 6-digit hex |
+| DESIGN-4 | U | `DESIGN-4 [unit] text <fg> on <bg> is at least <n>:1` (one test per token pair) · the accent fill is at least 3:1 on the page |
+| DESIGN-5 | U | `DESIGN-5 [unit] --focus is at least 3:1 …` · `:focus-visible draws a 3 px outline from the focus tokens` |
+| DESIGN-6 | U | `DESIGN-6 [unit] the accent colour is used by .btn-accent only, and only NextMatch asks for it` |
+| DESIGN-7 | E2E | `DESIGN-7 [e2e] one 16 px gap between the sections of <home\|fixture\|squad\|player> at <320\|390\|768\|1280> px` |
+| DESIGN-8 | E2E | `DESIGN-8 [e2e] the accent colour is on exactly one element of the home page: the action` |
+| DESIGN-9 | E2E | `DESIGN-9 [e2e] the focus ring is 3 px and comes from the focus tokens` |
+Session 20a's file list for the unit guards is the `TSX_FILES` array in `tests/unit/design-tokens.test.ts`; later design sessions extend it.
+
 ## Smoke (needs the real Supabase project; owner's yes first)
 `SMOKE-1` real sign-in and sign-out-all · `SMOKE-2` `/rest/v1/` with anon key lists only allowed views and functions · `SMOKE-3` RSVP round trip with a test player · `SMOKE-4` `core` unreachable from REST.

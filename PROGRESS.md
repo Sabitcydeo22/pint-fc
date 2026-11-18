@@ -739,3 +739,33 @@
 - To move the demo match: `node scripts/seed.mjs --allow-remote --demo-cutoff-in <n>` with `DATABASE_URL` from `.env.local` in a shell variable, never on the command line, owner "yes" first; never with `--logins` (D-60).
 - The smoke user `smoke-one@pintfc.test` has no known password (random, discarded); `npm run test:smoke` with `SMOKE_WRITE=yes` sets a new one.
 - Session 19 is closed. Next: the design session (defect list A, 7 points). Open: Node 26.x vs 24.16 (a redeploy needs a new "po"), the 40 real logins (D-142), and the Vercel 2FA prompt (the owner chose to be reminded later).
+
+## session-20a — design: tokens and spacing foundation (2026-11-18)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Session 20 is the design session (not in the plan files; see PLAN.md "Design sessions" and D-157 to D-161). 20a changes no behaviour, API, database or test id. No install, nothing deleted, nothing committed or pushed, no image added.
+
+**Done**
+- `src/app/globals.css` rewritten around tokens: colours (navy `--primary`, one bright-blue `--accent`, `--focus` and `--focus-on-dark`), spacing `--space-1..7` (4/8/12/16/24/32/48), type `--text-sm..3xl` (14/16/20/24/32/48), weights 400 and 700 only. New `.stack` / `.stack-sm` / `.stack-xs` (one gap between sections: 16 / 12 / 8 px), `.btn-accent`, `.chip`, and classes for stats, results, mini table, squad and the event page. The `<style>` string of `Attendance.tsx` moved into this file.
+- Inline styles and raw values removed from `NextMatch`, `SeasonRecord`, `LatestResults`, `MiniTable`, `RsvpButtons`, `Attendance`, `Footer`, `app/page.tsx`, `squad/page.tsx`, `players/[id]/page.tsx`; `fixtures/[id]/page.tsx` and the home page got `className="stack"`. `go-to-event` is the one accent element. Defect 3 (the cramped "My answer" and "Attendance" cards) is fixed by the stack gap.
+- Docs: `docs/design/screens.md` (look, tokens with computed contrast, people rule), `docs/design/test-map.md` (DESIGN group), `PLAN.md`, `DECISIONS.md` (D-157 to D-161).
+
+**Proof**
+- RED first (unit): `tests/unit/design-tokens.test.ts` against the old code: 18 failed, 9 passed, all assertion failures (for example "expected [ …(59) ] to deeply equal []" for spacing, `:focus-visible` using `var(--accent)`). It then passed 27/27 after the code.
+- e2e `tests/e2e/spacing.spec.ts` (18 tests: 16 gap tests = 4 pages × 4 widths, DESIGN-8 one accent, DESIGN-9 focus ring) was written after the CSS (D-161); alone it passed 18/18.
+- Exit gate `npm run gate`, exit 0: typecheck and lint exit 0; unit 15 files / 71 tests; db 16 / 72; api 11 / 59; e2e 122 passed (104 before + 18); `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`.
+- Mutation check on the new tests (each break restored; SHA-256 and `fc /b` identical to the backup after every restore): `.btn` weight 600 → DESIGN-2 weights; `.stack-sm` gap 14px → DESIGN-1 spacing; `color: #fff` in `.chip` → DESIGN-3; `--muted` lightened → three DESIGN-4 pairs; `--focus` removed → DESIGN-3 tokens + DESIGN-5; the header focus rule removed → DESIGN-5; `page.tsx` with `marginTop: 10`, weight 800 and `#123456` → DESIGN-1, 2 and 3 together; `.stack` gap 0 → all 16 DESIGN-7 tests; `.chip-ok` in the accent → DESIGN-6 (unit) and DESIGN-8 (e2e); header focus colour = accent → DESIGN-5 (unit) and DESIGN-9 (e2e). Gap-0 and the other two e2e mutations were run together in one e2e run: 18 failed, each group for its own mutation.
+
+**Decisions** (D-157 to D-161, also in `DECISIONS.md`)
+- Owner's answers recorded; palette and scales (D-157, D-158); small visible changes from the scales (D-159); guard scope is the 20a file list and five files outside it still have inline styles (D-160); e2e written after the CSS, plan-check unaffected (D-161).
+
+**Known gaps and UNKNOWN**
+- `.card` is still `max-width: 420px` and the page is still 960 px: sessions 20d (desktop). Defects 1, 2 and 4 (table at 320 px, missing placeholder SVG, "Not going" wrapping) are NOT fixed yet: 20b and 20c.
+- The two mutation backups (`globals.css.orig`, `page.tsx.orig`) are in the scratchpad; the agent may not delete them.
+- UNKNOWN: whether `squad/loading.tsx`, `players/[id]/loading.tsx`, `SettingsForm.tsx`, `sign-in/page.tsx` and `LiveClock.tsx` should join the guard (D-160). UNKNOWN: how the new colours look to the eye (no screenshots reviewed in 20a; the screenshot spec still writes 390 and 320 px files only).
+- The smoke players question stays UNKNOWN (production untouched).
+
+**Next session needs to know**
+- 20b: fix the league table at 320 px (`MiniTable.tsx` `.mt` / `.mt-team`: no mid-word breaks, narrower number columns) and the "Not going" wrap (`.fx-choices` / `.fx-choice` in `globals.css`: stack below 480 px, `white-space: nowrap`), and add `tests/e2e/layout-matrix.spec.ts` for 320/390/768/1280. Tests first.
+- Spacing and type values must come from tokens; extend `TSX_FILES` in `tests/unit/design-tokens.test.ts` when a session touches a new file.
+- `.stack > *` resets only `margin-block`, so a card keeps `margin-inline: auto`. Utilities sit AFTER `.field` in `globals.css` on purpose (so the stack beats `.field`'s margin).
+- 20c needs `public/img/` (the folder does not exist), `middleware.ts` matcher and CSP `img-src 'self' data:` (outside the 20a list; they were approved in the plan, D-157).

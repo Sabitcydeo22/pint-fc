@@ -17,7 +17,7 @@ export default async function FixturePage({ params }: { params: Promise<{ id: st
   if (check === 'not_found') notFound();
   if (check === 'signed_out') redirect('/sign-in');
   return (
-    <main data-testid="page-fixture">
+    <main data-testid="page-fixture" className="stack">
       <Attendance matchId={id} />
     </main>
   );

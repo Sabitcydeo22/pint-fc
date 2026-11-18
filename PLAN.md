@@ -196,5 +196,13 @@ Orange outline = critical path.
 ## Live in class
 **session-16 live-in-class** (AC-2.4.3, the snapshot date on the mini table). About 20 minutes, one component, one test that goes red then green. It depends only on session 09 and can run any time after it.
 
+## Design sessions (after session 19; not in the dependency graph above)
+Session 20 is the design session (owner's brief, 18 Nov 2026): make the site look like a real club site without changing behaviour, API, database or test ids. It is split into small sessions, each ending with `npm run gate` green. It has no acceptance check of its own, so `plan:check` is unchanged; its tests are the `DESIGN-n` group in `docs/design/test-map.md`. The 20a–20e split and the owner's answers are in `PROGRESS.md` and `DECISIONS.md` (D-157 onwards).
+- **20a** tokens and spacing foundation (colour, spacing, type scale, weights, `.stack`, one accent, focus tokens). Fixes the cramped fixture cards.
+- **20b** the league table at 320 px and the "Not going" button, plus a 320/390/768/1280 layout matrix.
+- **20c** no-people assets: `public/img/*.svg`, crest, jersey, initials avatar, the CSP `img-src 'self' data:`.
+- **20d** desktop layout up to 1200 px with a grid inside it.
+- **20e** club polish: hero, next-match card, results rows, footer, screenshots at four widths.
+
 ## Release
 Session 19's last step is the production deploy and needs the owner's explicit "yes". Session 18 needs the owner to create the Supabase project (I give the steps then) and confirms the JWT-lifetime setting on the Free plan (D-13).

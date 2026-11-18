@@ -76,7 +76,7 @@ export default function RsvpButtons({ matchId, open, me, onChanged }: RsvpButton
   }
 
   return (
-    <section aria-labelledby="my-answer-title" className="card" data-testid="my-answer">
+    <section aria-labelledby="my-answer-title" className="card stack-sm" data-testid="my-answer">
       <h2 id="my-answer-title">My answer</h2>
       <div role="group" aria-labelledby="my-answer-title" className="fx-choices">
         {CHOICES.map((c) => (
@@ -113,16 +113,14 @@ export default function RsvpButtons({ matchId, open, me, onChanged }: RsvpButton
           {reason.length}/{REASON_MAX}
         </span>
       </div>
-      <p className="muted" style={{ marginTop: 0 }}>
-        Your reason is saved with your next tap on an answer. Only you can see it.
-      </p>
+      <p className="muted">Your reason is saved with your next tap on an answer. Only you can see it.</p>
       {saved ? (
-        <p role="status" data-testid="rsvp-saved" style={{ color: 'var(--ok)', fontWeight: 700, margin: 0 }}>
+        <p role="status" data-testid="rsvp-saved" className="status-ok bold">
           Saved
         </p>
       ) : null}
       {error ? (
-        <p role="alert" data-testid="rsvp-error" style={{ color: 'var(--bad)', fontWeight: 700, margin: 0 }}>
+        <p role="alert" data-testid="rsvp-error" className="status-bad bold">
           {error}
         </p>
       ) : null}

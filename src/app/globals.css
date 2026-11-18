@@ -1,16 +1,44 @@
-/* "Sport", light, single theme (docs/design/screens.md). Phone first; content centres at 960 px from 768 px. */
+/* "Sport": a light page (white and pale blue-gray), a dark navy header, navy text and ONE bright-blue accent for the single
+   most important action on a page (docs/design/screens.md). Every colour, space and type size below comes from a token in
+   :root; tests/unit/design-tokens.test.ts fails when a rule outside this block uses a raw value. */
 :root {
-  --ink: #0b1b2b;
-  --muted: #4a5a6b;
-  --primary: #0b3a75;
-  --accent: #c8410b;
+  /* colour */
+  --ink: #0b1f3a;
+  --muted: #44546a;
+  --primary: #0b2a52;
+  --accent: #0a5cff;
   --bg: #ffffff;
-  --surface: #f1f5fa;
+  --surface: #eef3f9;
   --ok: #0f6b3a;
   --warn: #8a5300;
   --bad: #b3261e;
+  --on-fill: #ffffff;
+  --on-dark-muted: #c9d6ea;
+  --focus: #0848c4;
+  --focus-on-dark: #ffffff;
+
+  /* spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* type scale: 14 / 16 / 20 / 24 / 32 / 48, two weights */
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 3rem;
+  --weight-regular: 400;
+  --weight-bold: 700;
+
+  /* shape and width */
   --radius: 8px;
-  --gutter: 16px;
+  --radius-pill: 999px;
   --max-width: 960px;
 }
 
@@ -21,7 +49,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 100%;
 }
 
 body {
@@ -32,8 +60,22 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-weight: var(--weight-regular);
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+h1 {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
 }
 
 a {
@@ -41,8 +83,11 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+.site-header :focus-visible {
+  outline-color: var(--focus-on-dark);
 }
 
 .page {
@@ -50,7 +95,7 @@ a {
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: var(--gutter);
+  padding: var(--space-4);
   min-width: 0;
 }
 
@@ -60,13 +105,13 @@ a {
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   border: 2px solid var(--primary);
   border-radius: var(--radius);
   background: var(--primary);
-  color: #ffffff;
+  color: var(--on-fill);
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--weight-bold);
   text-decoration: none;
   cursor: pointer;
 }
@@ -78,33 +123,38 @@ a {
   background: var(--bg);
   color: var(--primary);
 }
+/* the ONE accent: the single most important action on a page (home: "Going / Not going") */
+.btn-accent {
+  border-color: var(--accent);
+  background: var(--accent);
+}
 
 /* ---------- header ---------- */
 .site-header {
   background: var(--primary);
-  color: #ffffff;
+  color: var(--on-fill);
 }
 .site-header a,
 .site-header button {
-  color: #ffffff;
+  color: var(--on-fill);
 }
 .header-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 8px var(--gutter);
+  padding: var(--space-2) var(--space-4);
 }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 44px;
-  font-weight: 800;
-  font-size: 1.25rem;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
   letter-spacing: 0.04em;
   text-decoration: none;
 }
@@ -112,20 +162,20 @@ a {
   display: inline-block;
   width: 28px;
   height: 28px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--on-fill);
   border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
-  background: var(--accent);
+  background: var(--on-fill);
 }
 .nav-toggle {
   display: none;
   min-height: 44px;
   min-width: 44px;
-  padding: 0 14px;
-  border: 2px solid #ffffff;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--on-fill);
   border-radius: var(--radius);
   background: transparent;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--weight-bold);
   cursor: pointer;
 }
 .nav-panel {
@@ -134,33 +184,33 @@ a {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px 16px;
+  gap: var(--space-2) var(--space-4);
   min-width: 0;
 }
 .nav-panel a.nav-link {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 8px;
-  font-weight: 600;
+  padding: 0 var(--space-2);
+  font-weight: var(--weight-bold);
 }
 .account-menu {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .account-name {
-  font-weight: 600;
+  font-weight: var(--weight-bold);
 }
 .header-btn {
   min-height: 44px;
-  padding: 0 12px;
-  border: 2px solid #ffffff;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--on-fill);
   border-radius: var(--radius);
   background: transparent;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--weight-bold);
   cursor: pointer;
 }
 .header-btn:disabled {
@@ -178,7 +228,7 @@ a {
     flex-basis: 100%;
     flex-direction: column;
     align-items: stretch;
-    padding-bottom: 8px;
+    padding-bottom: var(--space-2);
   }
   .nav-panel[data-open='true'] {
     display: flex;
@@ -197,25 +247,29 @@ a {
 }
 .footer-inner {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 24px var(--gutter);
+  padding: var(--space-5) var(--space-4);
+}
+.footer-inner > p {
+  margin: 0;
 }
 .footer-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 800;
+  gap: var(--space-2);
+  font-weight: var(--weight-bold);
 }
 .footer-brand .crest {
   border-color: var(--primary);
+  background: var(--primary);
 }
 .footer-links,
 .footer-social {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -231,43 +285,288 @@ a {
   color: var(--muted);
 }
 
-/* ---------- sign-in ---------- */
+/* ---------- cards, forms ---------- */
 .card {
   max-width: 420px;
   margin: 0 auto;
-  padding: 24px var(--gutter);
+  padding: var(--space-5) var(--space-4);
   border-radius: var(--radius);
   background: var(--surface);
 }
 .field {
   display: grid;
-  gap: 4px;
-  margin-bottom: 16px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
 }
 .field label {
-  font-weight: 600;
+  font-weight: var(--weight-bold);
 }
 .field input {
   width: 100%;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 var(--space-3);
   border: 2px solid var(--muted);
   border-radius: var(--radius);
-  background: #ffffff;
+  background: var(--bg);
   color: var(--ink);
   font: inherit;
 }
 .form-error {
-  margin: 0 0 16px;
-  padding: 12px;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
   border-left: 4px solid var(--bad);
-  background: #ffffff;
+  background: var(--bg);
   color: var(--bad);
-  font-weight: 600;
+  font-weight: var(--weight-bold);
+}
+
+/* ---------- type and layout utilities (after the rules above, so the stacks win over `.field` margins) ---------- */
+.t-sm {
+  font-size: var(--text-sm);
+}
+.t-md {
+  font-size: var(--text-md);
+}
+.t-lg {
+  font-size: var(--text-lg);
+}
+.t-xl {
+  font-size: var(--text-xl);
+}
+.bold {
+  font-weight: var(--weight-bold);
+}
+.status-ok {
+  color: var(--ok);
+}
+.status-bad {
+  color: var(--bad);
+}
+
+/* One gap between sections: a stack lays its children out in a column, `gap` is the only space between them. */
+.stack,
+.stack-sm,
+.stack-xs {
+  display: grid;
+  min-width: 0;
+}
+.stack {
+  gap: var(--space-4);
+}
+.stack-sm {
+  gap: var(--space-3);
+}
+.stack-xs {
+  gap: var(--space-2);
+}
+.stack > *,
+.stack-sm > *,
+.stack-xs > * {
+  margin-block: 0;
+  min-width: 0;
+}
+
+/* chips: the RSVP status */
+.chip {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-weight: var(--weight-bold);
+  color: var(--on-fill);
+  background: var(--muted);
+}
+.chip-ok {
+  background: var(--ok);
+}
+
+/* stats (season record, player stats) */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.stat {
+  min-width: 0;
+}
+.stat-value {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+/* latest results */
+.result-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.result-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+.result-outcome {
+  display: inline-block;
+  min-width: 28px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  color: var(--on-fill);
+  font-weight: var(--weight-bold);
+  text-align: center;
+}
+.result-opponent {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-weight: var(--weight-bold);
+}
+
+/* mini league table */
+.mt {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.mt-cell {
+  padding: var(--space-2) var(--space-1);
+  text-align: right;
+}
+.mt-head {
+  border-bottom: 2px solid var(--muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+.mt-team {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+/* our row: a real left border (survives forced colours) plus the bold label in the markup */
+.mt-us {
+  border-left: var(--space-1) solid var(--primary);
+  background: var(--surface);
+}
+
+/* squad */
+.squad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.squad-grid > li {
+  min-width: 0;
+}
+.squad-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.squad-number {
+  min-width: 28px;
+  font-weight: var(--weight-bold);
+  color: var(--primary);
+}
+.squad-name {
+  min-width: 0;
+  font-weight: var(--weight-bold);
+}
+
+/* event page: answers, counts, attendance */
+.fx-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.fx-choice {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-1);
+  border: 2px solid var(--choice, var(--primary));
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.fx-choice[aria-pressed='true'] {
+  background: var(--choice, var(--primary));
+  color: var(--on-fill);
+}
+.fx-choice:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.fx-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.fx-count {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+.fx-count strong {
+  display: block;
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+}
+.fx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--surface);
+  min-width: 0;
+}
+.fx-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fx-chip {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-weight: var(--weight-bold);
+  color: var(--on-fill);
+  white-space: nowrap;
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 24px;
+    padding: var(--space-5);
+  }
+}
+
+/* the projector view of the event page */
+@media (min-width: 1200px) {
+  .fx-counts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .fx-count strong {
+    font-size: var(--text-3xl);
+  }
+  .fx-row {
+    font-size: var(--text-lg);
   }
 }

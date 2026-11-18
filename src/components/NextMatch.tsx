@@ -63,7 +63,7 @@ export default function NextMatch() {
 
   if (state.kind === 'loading') {
     return (
-      <section aria-labelledby="next-match-title" aria-busy="true" data-testid="next-match-loading" className="card">
+      <section aria-labelledby="next-match-title" aria-busy="true" data-testid="next-match-loading" className="card stack-sm">
         <h2 id="next-match-title">Next match</h2>
         <p className="muted">Loading…</p>
       </section>
@@ -71,7 +71,7 @@ export default function NextMatch() {
   }
   if (state.kind === 'error') {
     return (
-      <section aria-labelledby="next-match-title" data-testid="next-match-error" className="card">
+      <section aria-labelledby="next-match-title" data-testid="next-match-error" className="card stack-sm">
         <h2 id="next-match-title">Next match</h2>
         <p role="alert">Something went wrong. Try again.</p>
         <button type="button" className="btn" data-testid="retry-button" onClick={load}>
@@ -83,7 +83,7 @@ export default function NextMatch() {
   const { data } = state;
   if (!data.next_match) {
     return (
-      <section aria-labelledby="next-match-title" className="card">
+      <section aria-labelledby="next-match-title" className="card stack-sm">
         <h2 id="next-match-title">Next match</h2>
         <p data-testid="next-match-empty">No upcoming matches</p>
       </section>
@@ -108,27 +108,29 @@ function NextMatchCard({ match, serverNow }: { match: NextMatchRow; serverNow: s
   const open = match.rsvp_open && nowMs < Date.parse(match.cutoff_at);
 
   return (
-    <section aria-labelledby="next-match-title" data-testid="next-match-card" className="card">
+    <section aria-labelledby="next-match-title" data-testid="next-match-card" className="card stack-sm">
       <h2 id="next-match-title">Next match</h2>
-      <p style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
-        <span className="muted">vs </span>
-        <span data-testid="next-match-opponent">{match.opponent}</span>
-      </p>
-      <p className="muted" style={{ margin: '4px 0' }} data-testid="next-match-competition">
-        {match.competition}
-      </p>
-      <p style={{ margin: '4px 0' }}>
-        <span className="muted">Venue: </span>
-        <span data-testid="next-match-venue">{match.venue}</span>
-      </p>
-      <p style={{ margin: '4px 0' }}>
-        <span className="muted">Kickoff: </span>
-        <time dateTime={match.kickoff_at} data-testid="next-match-kickoff">
-          {formatKickoff(match.kickoff_at)}
-        </time>
-      </p>
+      <div className="stack-xs">
+        <p className="t-lg bold">
+          <span className="muted">vs </span>
+          <span data-testid="next-match-opponent">{match.opponent}</span>
+        </p>
+        <p className="muted" data-testid="next-match-competition">
+          {match.competition}
+        </p>
+        <p>
+          <span className="muted">Venue: </span>
+          <span data-testid="next-match-venue">{match.venue}</span>
+        </p>
+        <p>
+          <span className="muted">Kickoff: </span>
+          <time dateTime={match.kickoff_at} data-testid="next-match-kickoff">
+            {formatKickoff(match.kickoff_at)}
+          </time>
+        </p>
+      </div>
 
-      <div data-testid="countdown" role="timer" aria-live="off" style={{ margin: '12px 0', fontSize: '1.5rem', fontWeight: 800 }}>
+      <div data-testid="countdown" role="timer" aria-live="off" className="t-xl bold">
         {view.kickedOff ? (
           'Kicked off'
         ) : (
@@ -139,11 +141,8 @@ function NextMatchCard({ match, serverNow }: { match: NextMatchRow; serverNow: s
         )}
       </div>
 
-      <p style={{ margin: '4px 0' }}>
-        <span
-          data-testid="rsvp-status"
-          style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 999, fontWeight: 700, color: '#ffffff', background: open ? 'var(--ok)' : 'var(--muted)' }}
-        >
+      <p>
+        <span data-testid="rsvp-status" className={open ? 'chip chip-ok' : 'chip'}>
           {open ? 'Open' : 'RSVP closed'}
         </span>{' '}
         <span className="muted" data-testid="rsvp-cutoff">
@@ -151,8 +150,8 @@ function NextMatchCard({ match, serverNow }: { match: NextMatchRow; serverNow: s
         </span>
       </p>
 
-      <p style={{ marginBottom: 0 }}>
-        <Link href={`/fixtures/${match.id}`} prefetch={false} className="btn" data-testid="go-to-event">
+      <p>
+        <Link href={`/fixtures/${match.id}`} prefetch={false} className="btn btn-accent" data-testid="go-to-event">
           Going / Not going
         </Link>
       </p>
