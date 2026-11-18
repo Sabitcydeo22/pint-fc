@@ -654,16 +654,28 @@
 
 ## session-19 — release-deploy (2026-11-15)
 
-**STATUS: IN PROGRESS when written.** Not done yet: the full exit gate (`npm run gate`), `npm run test:smoke` in this session, the owner's review of the preview, and the production deploy. Update this section at the end.
+**STATUS: DONE (closed 18 Nov 2026).** Exit gate run by the owner and passed, commit `ce08158` pushed, production deployed on 15 Nov 22:31 and checked by the owner. Known gaps remain below (Node version, 40 real logins, design defect list A).
 
 **Done**
-- Step 1: `REL-1` (`tests/unit/release.test.ts`) and `scripts/release-check.mjs`. The owner reported step 1 done and verified (REL-1 passes 6/6; the two new files are untracked and must not be committed yet). Both files are still untracked.
+- Step 1: `REL-1` (`tests/unit/release.test.ts`) and `scripts/release-check.mjs`. The owner reported step 1 done and verified (REL-1 passes 6/6). Both files were committed in `ce08158`.
 - Step 2: Vercel project `pintfc`, folder linked (D-143), `vercel.json` (D-144), `.vercelignore` (D-145), environment variables for Production and Preview (D-146).
 - The first deployment was forced to production and failed (D-144). A preview deploy succeeded (D-147): `https://pintfc-msw3osu3p-sabit-pintfc.vercel.app`.
 - The real Supabase project was seeded with the fake demo data, without logins (D-141).
 - Preview checks with `vercel curl` and a cookie test with the smoke user (D-148, D-149).
+- Exit gate on the 6 staged files, run by the owner: see "Closing proof" below.
+- Commit `ce08158`, pushed `8b9ec12..ce08158`.
+- Production deploy on 15 Nov 22:31 after the owner wrote "po" (agent-run: `npx vercel deploy --prod --scope sabit-pintfc --logs`): `dpl_3nM93uAjQyFHA676pUA9TdXEoSbP`, alias `https://pintfc-two.vercel.app`, READY, target production.
+- Owner checked production in an Incognito window: `/api/health` returned `{"ok":true}`, the home page shows real data, the Console is empty.
+- Production cookie test (agent-run, `vercel curl`): 15 PASS, API level only, smoke-one only.
+- Cleanup by the owner: the Protection Bypass secret deleted in the Vercel dashboard (the owner's word, no screenshot); token `pintfc-s19` (already expired 16 Nov) deleted; token `pintfc-cli` deleted on 18 Nov.
 
-**Proof** (agent-run, shown as printed; none of it is the exit gate)
+**Closing proof** (run by the owner himself, Sabit)
+- Unit `release.test.ts`: 6 passed.
+- Smoke with `SMOKE_WRITE=yes`: 4 passed, exit 0.
+- `npm run gate`: ALL 7 GATES PASSED, exit 0; e2e 104 passed.
+- plan-check: OK, 19 sessions, 40 checks.
+
+**Proof before the exit gate** (agent-run, shown as printed; none of it is the exit gate)
 - Project: `pintfc`, id `prj_QadtIIpRosfMqOBhQPz5oJrVpROy`, team `sabit-pintfc` (the CLI shows plan `hobby`). `vercel link` wrote `.vercel/`; `git check-ignore -v` shows `.vercel/project.json` ignored by `.gitignore:5` and `.env.local` by `.gitignore:3`; after the owner's instruction, `git diff .gitignore` printed no difference.
 - First deploy: header "Production", `https://pintfc-jr0l91v04-sabit-pintfc.vercel.app`, inspect id `BaZnGpmomiF4gDJtAX3iNrzxu5Vi`, error `[STATIC_BUILD_NO_OUT_DIR] No Output Directory named "public" found after the Build completed`. The dry run before it printed `"framework": {"name": "Other", "slug": null}`; after `vercel.json` it printed `Next.js` / `nextjs`. A no-cookie HEAD request to that URL returned `302` with a `Location` on `vercel.com/sso-api`.
 - `.vercelignore` lines: `.env`, `.env.*`, `!.env.example`, `credentials.local.csv`, `screenshots/`, `test-results/`, `playwright-report/`, `supabase/.temp/`. Dry run before the preview: 196 files to upload (195 before `vercel.json`), 43 ignored, `.env.local` among the ignored. Vercel docs pages used: "Build Features" (ignored files and folders), ".vercelignore" and "vercel deploy".
@@ -692,9 +704,9 @@
     8b smoke-one password re-randomized and discarded (status 200)
     RESULT: all checks passed
   The first version of the script stopped at step 0 with exit 2 before any write (`-K` is not supported by `vercel curl`); the changes are in `preview-cookie-check.diff.txt` in the scratchpad.
-- NOT run in this session so far: `npm run gate`, `npm run test:smoke`, the unit test command of the plan's exit gate, any production deploy.
+- Superseded: the exit gate, `npm run test:smoke`, the unit test and the production deploy were all run later; see "Closing proof" above.
 
-**Decisions** (D-141 to D-150, also in `DECISIONS.md`)
+**Decisions** (D-141 to D-156, also in `DECISIONS.md`)
 - The remote seed ran without logins (supersedes D-138); the 40 real logins are a known gap (D-142). The first Vercel deployment of a project is always production and it failed on the framework preset; `vercel.json` sets Next.js (D-144). `.vercelignore` because `.gitignore` patterns are not applied on upload (D-145). Env vars through Git Bash `printf`, `--type config` for the readable ones (D-146). Preview with `--environment=preview` (D-147). `vercel curl` created a bypass secret (D-148). Cookie test with the smoke user only (D-149). The smoke suite cannot target a deployment URL (D-150).
 
 **Known gaps**
@@ -702,26 +714,28 @@
 - HYPOTHESIS: 41 of the 43 players come from the seed (41 + the 2 smoke players); not checked with a query. The seed totals also include the session 18 smoke rows (2 seasons, 1 RSVP, 18 matches).
 - HYPOTHESIS: `DATABASE_URL` on Vercel has no trailing newline (a Secret cannot be read back; `/api/home` returning real rows shows the URL works).
 - HYPOTHESIS: the 46-character `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the new publishable key format (`tests/smoke/smoke.test.ts:30` calls it "the new publishable key (sb_publishable_...)"); the value was not printed or inspected.
-- HYPOTHESIS: no production alias or domain exists; not re-checked with `vercel project ls` or `vercel ls` after the failed first deploy.
+- Superseded: production now exists, alias `https://pintfc-two.vercel.app` (deploy `dpl_3nM93uAjQyFHA676pUA9TdXEoSbP`).
 - HYPOTHESIS: smoke-one has no other open session (the script ends its own; not counted with a query this time).
 - The cookie test is API level only (D-149): not a real browser, reached through the protection bypass, one smoke user, no sign-out-all, no token expiry.
 - The demo match RSVP cutoff is 2026-11-17T19:50:11Z; after that the page shows RSVP closed until the seed is re-run with a new `--demo-cutoff-in`.
-- `vercel.json`, `.vercelignore`, `scripts/release-check.mjs` and `tests/unit/release.test.ts` are untracked; a commit needs the owner's "go".
+- `vercel.json`, `.vercelignore`, `scripts/release-check.mjs` and `tests/unit/release.test.ts` are committed in `ce08158` (no longer untracked).
 - Preview build log warnings, left as they are: the `middleware` file convention is deprecated for `proxy`; npm ERESOLVE peer-dependency notes for `eslint-config-next` with eslint 10.14.0; two packages with install scripts not covered by `allowScripts`.
-- The project's Node version is shown as 26.x by `vercel project ls`; the owner states local is 24.16; the agent did not verify either.
+- KNOWN GAP: on 18 Nov the owner saw Node.js Version 26.x in the Vercel project settings; local Node is 24.16. Not changed; no redeploy without a new "po" (D-155).
+- Production cookie test is API level only, smoke-one only, not a real browser.
+- Design defect list A (7 points) is for the design session after session 19.
 
-**Open items to close at the end of the session** (owner actions, or owner-approved)
-1. Revoke the "Protection Bypass for Automation" secret that `vercel curl` created on project `pintfc` (Deployment Protection in the project settings, or the CLI command it printed: `vercel project protection disable prj_QadtIIpRosfMqOBhQPz5oJrVpROy --protection-bypass --protection-bypass-secret <secret>`).
-2. Revoke the Vercel token `pintfc-s19` (named by the owner; used as `VERCEL_TOKEN`).
+**Open items** (owner actions, or owner-approved)
+1. DONE: the "Protection Bypass for Automation" secret was deleted by the owner in the Vercel dashboard (the owner's word, no screenshot).
+2. DONE: token `pintfc-s19` had already expired (16 Nov) and was deleted by the owner; `pintfc-cli` deleted on 18 Nov.
 3. Remove the failed deployment record by hand (the agent may not delete): `pintfc-jr0l91v04-sabit-pintfc.vercel.app`, inspect id `BaZnGpmomiF4gDJtAX3iNrzxu5Vi`.
-4. Check the Node version: the project setting shows 26.x, the owner says local is 24.16; decide whether to pin it (the setting is on the project, not in the repo).
+4. OPEN, known gap: the project setting shows Node 26.x, local is 24.16; not changed (D-155).
 5. Files the agent left outside the repo, which it cannot delete: in the scratchpad `prod-check.env`, `prod-check2.env`, `prod-check3.env`, `prev-check2.env` (output of `vercel env pull`; secrets appear only as the placeholder `[SENSITIVE]`; HYPOTHESIS: they may contain a Vercel-issued token, not inspected), the dry-run and deploy output files and `preview-cookie-check*.mjs`; in the Git Bash `/tmp` the files `o.txt` and `b.out` (CLI status text, no values).
 6. HYPOTHESIS: the scratchpad stderr captures `t0a.err`, `t0b.err`, `t1.err`, `t2.err` (and any other stderr capture, such as the `.err` files of the `vercel curl` and deploy runs) may contain the Protection Bypass secret printed by `vercel curl`; none was inspected for it. Revoking the secret (item 1) makes any copy useless. The agent cannot delete these files; the owner may remove them by hand.
 
 **Next session needs to know**
-- Preview URL `https://pintfc-msw3osu3p-sabit-pintfc.vercel.app` (Deployment Protection on); project `pintfc` in team `sabit-pintfc`, id `prj_QadtIIpRosfMqOBhQPz5oJrVpROy`. Production: nothing live (D-144, see its HYPOTHESIS).
+- Preview URL `https://pintfc-msw3osu3p-sabit-pintfc.vercel.app` (Deployment Protection on); project `pintfc` in team `sabit-pintfc`, id `prj_QadtIIpRosfMqOBhQPz5oJrVpROy`. Production is live: `https://pintfc-two.vercel.app`, `dpl_3nM93uAjQyFHA676pUA9TdXEoSbP`.
 - Never run `npx vercel deploy` without checking the target: use `--environment=preview` and read the CLI header ("Preview" or "Production").
 - To check the preview without a browser: `npx vercel curl <full url>/api/health --scope sabit-pintfc -- -s -i`. `-K` is rejected; keep secrets out of argv with `-H @-` or `--data-binary @-` (one stdin use per command).
 - To move the demo match: `node scripts/seed.mjs --allow-remote --demo-cutoff-in <n>` with `DATABASE_URL` from `.env.local` in a shell variable, never on the command line, owner "yes" first; never with `--logins` (D-60).
 - The smoke user `smoke-one@pintfc.test` has no known password (random, discarded); `npm run test:smoke` with `SMOKE_WRITE=yes` sets a new one.
-- Still to do in session 19 per the plan: the exit gate (three commands), the owner's review of the preview and screenshots, and the production deploy as the very last step with the owner's explicit "yes".
+- Session 19 is closed. Next: the design session (defect list A, 7 points). Open: Node 26.x vs 24.16 (a redeploy needs a new "po"), the 40 real logins (D-142), and the Vercel 2FA prompt (the owner chose to be reminded later).
