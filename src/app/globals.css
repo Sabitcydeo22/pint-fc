@@ -293,6 +293,16 @@ a {
   border-radius: var(--radius);
   background: var(--surface);
 }
+/* forms and single-column pages keep a narrow card; `.card` is capped the same until the desktop session (20d) */
+.card-narrow {
+  max-width: 420px;
+}
+/* very small phones: 12 px instead of 16 px beside the card text (session 20b) */
+@media (max-width: 359px) {
+  .card {
+    padding: var(--space-5) var(--space-3);
+  }
+}
 .field {
   display: grid;
   gap: var(--space-1);
@@ -364,6 +374,45 @@ a {
 .stack-xs > * {
   margin-block: 0;
   min-width: 0;
+}
+
+/* an empty live region stays in the accessibility tree but takes no room (and no stack gap) */
+.live-region:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* loading skeletons */
+.skeleton {
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.skeleton-row {
+  height: 44px;
+}
+.skeleton-title {
+  width: 60%;
+  height: 32px;
+}
+.skeleton-line {
+  width: 40%;
+  height: 20px;
+}
+
+/* settings: a checkbox and its label in one 44 px row */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-1) 0;
+}
+.check-box {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
 }
 
 /* chips: the RSVP status */
@@ -440,9 +489,23 @@ a {
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
 }
+/* fixed column widths (px): at 320 px the team column keeps about 110 px, enough for a whole word */
+.mt-col-pos {
+  width: 40px;
+}
+.mt-col-p {
+  width: 32px;
+}
+.mt-col-gd {
+  width: 40px;
+}
+.mt-col-pts {
+  width: 40px;
+}
+/* a word never breaks in the middle: lines wrap at spaces, and only a word wider than the column may break */
 .mt-team {
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 /* our row: a real left border (survives forced colours) plus the bold label in the markup */
 .mt-us {
@@ -484,14 +547,21 @@ a {
 }
 
 /* event page: answers, counts, attendance */
+/* below 480 px the three answers are three full-width rows; from 480 px they sit side by side */
 .fx-choices {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
+}
+@media (min-width: 480px) {
+  .fx-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .fx-choice {
   min-height: 44px;
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  white-space: nowrap;
   border: 2px solid var(--choice, var(--primary));
   border-radius: var(--radius);
   background: var(--bg);
@@ -499,7 +569,6 @@ a {
   font: inherit;
   font-weight: var(--weight-bold);
   cursor: pointer;
-  overflow-wrap: anywhere;
 }
 .fx-choice[aria-pressed='true'] {
   background: var(--choice, var(--primary));

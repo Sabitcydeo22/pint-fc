@@ -769,3 +769,21 @@
 - Spacing and type values must come from tokens; extend `TSX_FILES` in `tests/unit/design-tokens.test.ts` when a session touches a new file.
 - `.stack > *` resets only `margin-block`, so a card keeps `margin-inline: auto`. Utilities sit AFTER `.field` in `globals.css` on purpose (so the stack beats `.field`'s margin).
 - 20c needs `public/img/` (the folder does not exist), `middleware.ts` matcher and CSP `img-src 'self' data:` (outside the 20a list; they were approved in the plan, D-157).
+
+## session-20b — design: small phones, answers, tokens in the last files (2026-11-18)
+
+**STATUS: DONE, committed on the owner's "go" (not pushed).** First gate attempt was cut short by low memory (e2e `4 failed, 175 passed (7.8h)`; tests that ran for hours, a worker "exited unexpectedly (code=3221225794)": environmental). On the owner's "go" the gate was re-run unchanged: `npm run gate`, exit 0, typecheck and lint exit 0, unit 15 files / 78 tests, db 16 / 72, api 11 / 59, e2e 186 passed (6.2m), `plan-check OK: 19 sessions, 40 checks`, `ALL 7 GATES PASSED`. Committed after the owner's "go"; never pushed by the agent.
+
+**Done** (owner's answers D-162)
+- Defect 1: league table columns 40/32/40/40 px, team cell `overflow-wrap: break-word`, card padding 12 px below 360 px (`globals.css`, `MiniTable.tsx`). Defect 4: the three answers are full-width rows below 480 px, `white-space: nowrap` (`globals.css`). `.card-narrow` added (sign-in), `.card` still capped (20d).
+- The five files moved to tokens, plus `settings/page.tsx` (nested `.page` removed): `squad/loading.tsx`, `players/[id]/loading.tsx`, `SettingsForm.tsx`, `sign-in/page.tsx`, `LiveClock.tsx`. They joined `TSX_FILES`; DESIGN-10 forbids any `style=` in them.
+- New: `tests/e2e/layout-matrix.spec.ts` (L-1 to L-5, 4 widths, 64 tests). Docs: DECISIONS D-162 to D-165, test-map, screens.
+
+**Proof so far**
+- RED first: unit 7 failed (assertion failures, e.g. `expected [ 'style={{ marginTop: 0 }}', …(1) ] to deeply equal []`); e2e matrix 7 failed: L-1 at 320 px (broken words "Wanderers", "Ironbridge", "Northfield"), L-2 at 320 and 390 px (height 68, expected at most 48), L-5 (padding 16 vs 12 at 320, `.card-narrow` missing at four widths). L-3 and L-4 passed on the old code (regression guards, D-164).
+- After the code: unit guard 34/34; matrix 64 passed; typecheck and lint exit 0.
+- Mutation check (all four files restored, SHA-256 match and `fc /b` no differences): inline `style` in `LiveClock` → DESIGN-1 and DESIGN-10; `className="page"` in settings → DESIGN-10; squeezed table column → L-1 (320 px, re-run alone because a wide table masked it); answers in 3 columns → L-2 (320, 390); card padding 16 → L-5 (320); checkbox row 24 px → L-4 settings (4 widths); `card-narrow` removed → L-5 (4 widths); table 500 px wide → L-3 home (320, 390).
+
+**Next session needs to know**
+- The 20b gate passed and 20b is committed (see `git log`); nothing is left to re-run or approve for it. Next: 20c (no-people assets: `public/img/*.svg`, crest, jersey, initials avatar, CSP `img-src 'self' data:`), planned first and started only on the owner's approval. If the machine is low on memory, e2e can hang for hours: free memory before running the gate.
+- Backups of the mutated files are in the scratchpad (`globals.b.orig`, `signin-page.tsx.orig`, `settings-page.tsx.orig`, `liveclock.tsx.orig`); the agent may not delete them.

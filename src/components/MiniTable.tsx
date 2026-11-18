@@ -74,11 +74,11 @@ export default function MiniTable() {
         ) : null}
         <table data-testid="mini-table" aria-labelledby="mini-table-title" className="mt">
           <colgroup>
-            <col style={{ width: '2.5rem' }} />
+            <col className="mt-col-pos" />
             <col />
-            <col style={{ width: '2.5rem' }} />
-            <col style={{ width: '3rem' }} />
-            <col style={{ width: '3rem' }} />
+            <col className="mt-col-p" />
+            <col className="mt-col-gd" />
+            <col className="mt-col-pts" />
           </colgroup>
           <thead>
             <tr>

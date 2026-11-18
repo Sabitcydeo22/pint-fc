@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   const settings = await getMySettingsForPage();
   if (!settings) redirect('/sign-in');
   return (
-    <main className="page" data-testid="page-settings">
+    <main className="stack" data-testid="page-settings">
       <h1>My settings</h1>
       <p>
         Signed in as <strong data-testid="private-name">{player.displayName}</strong>

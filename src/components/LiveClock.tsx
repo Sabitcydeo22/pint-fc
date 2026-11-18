@@ -21,7 +21,7 @@ export function useServerNow(clock: ServerClock | undefined): number {
 export default function LiveClock({ serverNow, nowMs }: { serverNow: string; nowMs: number }) {
   const secondsAgo = Math.max(0, Math.floor((nowMs - Date.parse(serverNow)) / 1000));
   return (
-    <p className="muted" data-testid="last-updated" style={{ marginBottom: 0 }}>
+    <p className="muted" data-testid="last-updated">
       Updated {secondsAgo} s ago
     </p>
   );

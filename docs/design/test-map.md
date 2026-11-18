@@ -97,6 +97,8 @@ Counted: 7 + 15 + 9 + 7 = **38**.
 | DESIGN-7 | E2E | `DESIGN-7 [e2e] one 16 px gap between the sections of <home\|fixture\|squad\|player> at <320\|390\|768\|1280> px` |
 | DESIGN-8 | E2E | `DESIGN-8 [e2e] the accent colour is on exactly one element of the home page: the action` |
 | DESIGN-9 | E2E | `DESIGN-9 [e2e] the focus ring is 3 px and comes from the focus tokens` |
+| DESIGN-10 | U | `DESIGN-10 [unit] <file> has no inline style attribute` (the six 20b files) · `the settings page does not nest a second .page inside the layout .page` |
+| L-1 … L-5 | E2E | `L-1 league table team names never break inside a word at <w> px` · `L-2 answer buttons are one line, 44 px high, and stacked below 480 px` · `L-3 no horizontal scroll: <page> at <w> px` · `L-4 every button, link and checkbox row is at least 44 px: <page> at <w> px` · `L-5 card padding is 12 px below 360 px, 16 px from 360 px; sign-in keeps the narrow card` (`tests/e2e/layout-matrix.spec.ts`, widths 320, 390, 768, 1280) |
 Session 20a's file list for the unit guards is the `TSX_FILES` array in `tests/unit/design-tokens.test.ts`; later design sessions extend it.
 
 ## Smoke (needs the real Supabase project; owner's yes first)

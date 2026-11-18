@@ -21,6 +21,13 @@ const TSX_FILES = [
   'src/app/squad/page.tsx',
   'src/app/players/[id]/page.tsx',
   'src/app/fixtures/[id]/page.tsx',
+  // session 20b
+  'src/app/squad/loading.tsx',
+  'src/app/players/[id]/loading.tsx',
+  'src/app/settings/SettingsForm.tsx',
+  'src/app/settings/page.tsx',
+  'src/app/sign-in/page.tsx',
+  'src/components/LiveClock.tsx',
 ];
 
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -153,6 +160,26 @@ describe('DESIGN-5 focus', () => {
     const rule = (sel: RegExp) => [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) => sel.test(m[1].trim()))?.[2] ?? '';
     expect(rule(/^:focus-visible$/)).toMatch(/outline:\s*3px solid var\(--focus\)/);
     expect(rule(/^\.site-header :focus-visible$/)).toMatch(/outline-color:\s*var\(--focus-on-dark\)/);
+  });
+});
+
+describe('DESIGN-10 no inline spacing, size or look in the pages and loading skeletons', () => {
+  // the 20b files carry no `style=` at all: they use the classes of globals.css
+  const NO_STYLE = [
+    'src/app/squad/loading.tsx',
+    'src/app/players/[id]/loading.tsx',
+    'src/app/settings/SettingsForm.tsx',
+    'src/app/settings/page.tsx',
+    'src/app/sign-in/page.tsx',
+    'src/components/LiveClock.tsx',
+  ];
+  for (const file of NO_STYLE) {
+    it(`DESIGN-10 [unit] ${file} has no inline style attribute`, () => {
+      expect(noComments(read(file)).match(/\bstyle=\{[^}]*\}?\}?/g) ?? []).toEqual([]);
+    });
+  }
+  it('DESIGN-10 [unit] the settings page does not nest a second .page inside the layout .page', () => {
+    expect(noComments(read('src/app/settings/page.tsx'))).not.toMatch(/className="page"/);
   });
 });
 

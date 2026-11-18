@@ -21,9 +21,6 @@ const TOGGLES: { flag: Flag; testId: string; label: string }[] = [
   { flag: 'show_stats', testId: 'toggle-stats', label: 'Show my stats' },
 ];
 
-const row = { display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: 44, padding: '0.25rem 0' } as const;
-const box = { width: 24, height: 24, flex: '0 0 auto' } as const;
-
 export default function SettingsForm({ initial }: { initial: Settings }) {
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>(initial);
@@ -71,7 +68,7 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
   }
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} aria-busy={saving}>
+    <form onSubmit={(e) => e.preventDefault()} aria-busy={saving} className="stack-sm">
       {error ? (
         <p className="form-error" role="alert" data-testid="settings-error">
           {error}
@@ -82,17 +79,17 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
           Saved.
         </p>
       ) : (
-        <p role="status" className="muted" aria-live="polite" />
+        <p role="status" className="muted live-region" aria-live="polite" />
       )}
       {TOGGLES.map(({ flag, testId, label }) => {
         const locked = flag === 'public_opt_in' && publicLocked;
         const id = `setting-${flag}`;
         return (
-          <div key={flag} style={row}>
+          <div key={flag} className="check-row">
             <input
               id={id}
               type="checkbox"
-              style={box}
+              className="check-box"
               checked={settings[flag]}
               disabled={locked || saving}
               onChange={(e) => void change(flag, e.target.checked)}
