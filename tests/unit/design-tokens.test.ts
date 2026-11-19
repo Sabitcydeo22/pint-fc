@@ -187,6 +187,67 @@ describe('DESIGN-10 no inline spacing, size or look in the pages and loading ske
   });
 });
 
+describe('D-1 desktop width (session 20d)', () => {
+  /** Flat rules of a text; a selector list is split, so `.a, .b { x }` gives one rule for `.a` and one for `.b`. */
+  const rules = (text: string) => [...text.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap((m) => m[1].split(',').map((s) => ({ sel: s.trim(), body: m[2] })));
+  /** The CSS with every @media block cut out: only the rules that apply at every width. */
+  const withoutMedia = (): string => {
+    let out = cssOutsideRoot;
+    for (let at = out.indexOf('@media'); at !== -1; at = out.indexOf('@media')) {
+      const start = out.indexOf('{', at);
+      let depth = 0;
+      let end = start;
+      for (; end < out.length; end++) {
+        if (out[end] === '{') depth++;
+        if (out[end] === '}' && --depth === 0) break;
+      }
+      out = out.slice(0, at) + out.slice(end + 1);
+    }
+    return out;
+  };
+  const bodyOf = (sel: string) => rules(withoutMedia()).filter((r) => r.sel === sel).map((r) => r.body).join('\n');
+  /** The text inside every `@media (<query>) { ... }` block (braces matched). */
+  const mediaBlocks = (query: string): string => {
+    let out = '';
+    for (let at = css.indexOf(`@media (${query})`); at !== -1; at = css.indexOf(`@media (${query})`, at + 1)) {
+      const start = css.indexOf('{', at);
+      let depth = 0;
+      let end = start;
+      for (; end < css.length; end++) {
+        if (css[end] === '{') depth++;
+        if (css[end] === '}' && --depth === 0) break;
+      }
+      out += css.slice(start + 1, end);
+    }
+    return out;
+  };
+
+  it('D-1 [unit] the page width token is 1200px', () => {
+    expect(tokens['max-width']).toBe('1200px');
+  });
+
+  it('D-1 [unit] .card has no max-width; .card-narrow keeps 420px', () => {
+    expect(bodyOf('.card')).not.toMatch(/max-width/);
+    expect(bodyOf('.card-narrow')).toMatch(/max-width:\s*420px/);
+  });
+
+  it('D-1 [unit] home and fixture columns exist only from 768px (one step): home two equal columns, event page 3 : 2', () => {
+    const desktop = rules(mediaBlocks('min-width: 768px'));
+    const expected: Record<string, RegExp> = {
+      '.home-grid': /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+      '.fx-grid': /grid-template-columns:\s*minmax\(0,\s*3fr\)\s*minmax\(0,\s*2fr\)/,
+    };
+    for (const [sel, columns] of Object.entries(expected)) {
+      expect(desktop.filter((r) => r.sel === sel).map((r) => r.body).join('\n'), `${sel} in @media (min-width: 768px)`).toMatch(columns);
+      expect(bodyOf(sel), `${sel} outside the media query does not set columns`).not.toMatch(/grid-template-columns/);
+    }
+  });
+
+  it('D-1 [unit] below 768px the column wrappers add no box (display: contents), so the page stays one stack', () => {
+    for (const sel of ['.home-grid', '.home-col', '.fx-grid', '.fx-col']) expect(bodyOf(sel), sel).toMatch(/display:\s*contents/);
+  });
+});
+
 describe('DESIGN-6 one accent', () => {
   it('DESIGN-6 [unit] the accent colour is used by .btn-accent only, and only NextMatch (the home page action) asks for it', () => {
     const users = [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) => /var\(--accent\)/.test(m[2])).map((m) => m[1].trim());

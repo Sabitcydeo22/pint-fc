@@ -42,12 +42,44 @@ const attendance = {
   me: { answer: 'maybe', reason: 'Fake: late' },
 };
 
-/** The vertical gaps between the visible direct children of the page's <main>, in px. */
+/**
+ * The vertical gaps between the visible sections of the page's <main>, in px, per column (session 20d).
+ * Below 768 px the page is one stack: wrappers with `display: contents` (.home-grid, .home-col, .fx-grid, .fx-col) are
+ * looked through, so the sections are the same as before 20d. From 768 px the home and event pages put a two-column
+ * grid under the h1: the grid is one item of the main stack (the gap h1 to grid), and each column is a stack of its own.
+ */
 const gaps = (page: Page, mainTestId: string) =>
   page.evaluate((id) => {
     const main = document.querySelector(`[data-testid="${id}"]`) as HTMLElement;
-    const rects = Array.from(main.children).map((e) => e.getBoundingClientRect()).filter((r) => r.height > 0);
-    return { count: rects.length, gaps: rects.slice(1).map((r, i) => Math.round((r.top - rects[i].bottom) * 100) / 100) };
+    const top: Element[] = [];
+    const groups: Element[][] = [top];
+    let wrappers = 0;
+    const collect = (parent: Element, group: Element[]) => {
+      for (const el of Array.from(parent.children)) {
+        if (getComputedStyle(el).display === 'contents') {
+          collect(el, group);
+        } else if (/(^|\s)(home|fx)-grid(\s|$)/.test(el.className)) {
+          wrappers++;
+          group.push(el);
+          for (const col of Array.from(el.children)) {
+            const own: Element[] = [];
+            groups.push(own);
+            collect(col, own);
+          }
+        } else {
+          group.push(el);
+        }
+      }
+    };
+    collect(main, top);
+    let count = 0;
+    const out: number[] = [];
+    for (const group of groups) {
+      const rects = group.map((e) => e.getBoundingClientRect()).filter((r) => r.height > 0);
+      count += rects.length;
+      out.push(...rects.slice(1).map((r, i) => Math.round((r.top - rects[i].bottom) * 100) / 100));
+    }
+    return { count: count - wrappers, columns: groups.length - 1, gaps: out };
   }, mainTestId);
 
 const PAGES: Array<[string, (page: Page) => Promise<void>, string, number]> = [
@@ -78,7 +110,8 @@ for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 844 });
       await open(page);
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--space-4').trim())).toBe('16px');
-      const { count, gaps: g } = await gaps(page, mainId);
+      const { count, columns, gaps: g } = await gaps(page, mainId);
+      expect(columns, `columns of ${mainId}`).toBe(width >= 768 && (title === 'home' || title === 'fixture') ? 2 : 0);
       expect(count, `visible children of ${mainId}`).toBeGreaterThanOrEqual(minChildren);
       expect(g, `gaps between the children of ${mainId}`).toEqual(g.map(() => 16));
     });

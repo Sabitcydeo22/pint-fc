@@ -39,7 +39,7 @@
   /* shape and width */
   --radius: 8px;
   --radius-pill: 999px;
-  --max-width: 960px;
+  --max-width: 1200px;
 }
 
 *,
@@ -294,15 +294,23 @@ a {
 
 /* ---------- cards, forms ---------- */
 .card {
-  max-width: 420px;
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
   border-radius: var(--radius);
   background: var(--surface);
 }
-/* forms and single-column pages keep a narrow card; `.card` is capped the same until the desktop session (20d) */
+/* forms and single-column pages (sign-in, settings) keep a narrow, centred column of at most 420 px (session 20d: `.card` itself is no longer capped) */
 .card-narrow {
+  width: 100%;
   max-width: 420px;
+  margin: 0 auto;
+}
+/* column wrappers of the home and fixture pages: below 768 px they add no box, so the page is the same single stack as before 20d */
+.home-grid,
+.home-col,
+.fx-grid,
+.fx-col {
+  display: contents;
 }
 /* very small phones: 12 px instead of 16 px beside the card text (session 20b) */
 @media (max-width: 359px) {
@@ -686,9 +694,45 @@ a {
   white-space: nowrap;
 }
 
+/* desktop (session 20d): one step at 768 px. Header and footer padding match the page padding so their edges line up. */
 @media (min-width: 768px) {
   .page {
     padding: var(--space-5);
+  }
+  .header-bar {
+    padding: var(--space-2) var(--space-5);
+  }
+  .footer-inner {
+    padding: var(--space-5);
+  }
+  .home-grid,
+  .fx-grid {
+    display: grid;
+    gap: var(--space-4);
+    align-items: start;
+  }
+  .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* event page: 3 : 2, so the three answers (one line each, side by side from 480 px) fit in the left column at 768 px */
+  .fx-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .home-col,
+  .fx-col {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    min-width: 0;
+  }
+  .home-col > *,
+  .fx-col > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+  /* inside a column a card fills the column (a narrow card keeps its own margin) */
+  .card:not(.card-narrow) {
+    margin: 0;
   }
 }
 

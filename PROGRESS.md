@@ -759,7 +759,7 @@
 - Owner's answers recorded; palette and scales (D-157, D-158); small visible changes from the scales (D-159); guard scope is the 20a file list and five files outside it still have inline styles (D-160); e2e written after the CSS, plan-check unaffected (D-161).
 
 **Known gaps and UNKNOWN**
-- `.card` is still `max-width: 420px` and the page is still 960 px: sessions 20d (desktop). Defects 1 and 4 (table at 320 px, "Not going" wrapping) were fixed in 20b (`b0a080a`) and defect 2 (missing placeholder SVG) in 20c.
+- (Fixed in session 20d: `.card` is no longer capped and the page is 1200 px.) `.card` was still `max-width: 420px` and the page 960 px: session 20d (desktop). Defects 1 and 4 (table at 320 px, "Not going" wrapping) were fixed in 20b (`b0a080a`) and defect 2 (missing placeholder SVG) in 20c.
 - The two mutation backups (`globals.css.orig`, `page.tsx.orig`) are in the scratchpad; the agent may not delete them.
 - RESOLVED in 20b: `squad/loading.tsx`, `players/[id]/loading.tsx`, `SettingsForm.tsx`, `sign-in/page.tsx` and `LiveClock.tsx` joined the guard (D-160, D-162). UNKNOWN: how the new colours look to the eye (no screenshots reviewed in 20a; the screenshot spec still writes 390 and 320 px files only).
 - The smoke players question stays UNKNOWN (production untouched).
@@ -790,7 +790,7 @@
 
 ## session-20c — design: no-people graphics (2026-11-18)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Owner's answers: D-166. Decisions D-166 to D-168. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image downloaded (every graphic is hand-written SVG).
+**STATUS: DONE and committed as `e2964c4`.** Owner's answers: D-166. Decisions D-166 to D-168. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image downloaded (every graphic is hand-written SVG).
 
 **Done**
 - `public/img/placeholder-player.svg` (flat shirt, no body) and `public/img/placeholder-crest.svg` (shield, three bars, chevron), `src/app/icon.svg` (favicon, same shield). `Crest`, `Jersey`, `PlayerAvatar` components and `src/lib/initials.ts`. Header and footer use `Crest`; squad cards show a small jersey with the number only; the profile shows `player-photo` (the local jersey file, only for a consented player) or `player-avatar` (initials and number). The database `photo_url` is never rendered. Defect 2 (broken photo) is fixed.
@@ -808,7 +808,30 @@
 - The production database already holds `/img/placeholder-player.svg`, so a later deploy fixes the live site with no data change; no deploy was made (needs the owner's "po").
 - UNKNOWN: whether axe would flag the white text over the SVG shirt (ASSET-9 and the token pair unit tests cover the contrast instead; the existing a11y spec passed). UNKNOWN: how Next names the favicon in production (the test follows the `<link rel="icon">` href).
 - Cuffs and the collar trim are white, so on the white page they are hardly visible; the shirt still reads as a shirt. The design can change in 20e.
-- `.card` is still capped at 420 px (20d). The mutation backups (`c-*.orig`) are in the scratchpad; the agent may not delete them.
+- (Fixed in session 20d: `.card` is no longer capped.) `.card` was still capped at 420 px. The mutation backups (`c-*.orig`) are in the scratchpad; the agent may not delete them.
 
 **Next session needs to know**
 - 20d (desktop layout up to 1200 px, grid) is next; plan first. Any new file with styles joins `TSX_FILES` in `tests/unit/design-tokens.test.ts`. New graphics must stay plain shapes with token colours (ASSET-1 to ASSET-4); the only `<img>` allowed is the local jersey in `PlayerAvatar.tsx`.
+
+## session-20d — design: desktop layout up to 1200 px (2026-11-19)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Owner's answers to the plan and D-169 to D-172. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image used.
+
+**Done**
+- `globals.css`: `--max-width: 1200px`; `.card` has no cap; `.card-narrow` (420 px, centred, `width: 100%`) is used by sign-in and by a new wrapper in the settings page; one desktop step at 768 px (header and footer padding 24 px to line up with the page; home grid 2 equal columns; event grid 3 : 2). Column wrappers `.home-grid`, `.home-col`, `.fx-grid`, `.fx-col` are `display: contents` below 768 px. `page.tsx` (home) and `Attendance.tsx` wrap the sections without changing the DOM order. The squad grid needed no change (5 per row at 1280 px).
+- Tests: `D-1` unit in `design-tokens.test.ts`; new `tests/e2e/desktop-layout.spec.ts` (D-2 to D-10); the `DESIGN-7` `gaps` helper in `spacing.spec.ts` measures per column and checks the number of columns (owner approved that helper only; the 16 px assertion and the child counts are unchanged); `screenshots.spec.ts` adds 1280 px renders. Docs: DECISIONS D-169 to D-172, screens, test-map, PLAN, and the stale lines of 20a to 20c in this file.
+
+**Proof**
+- RED first, on the old code: unit 4 D-1 tests failed on assertions (`expected '960px' to be '1200px'`, and so on); e2e 15 failed on assertions (page width `Expected > 1100, Received 960`; squad `Expected >= 4, Received 3`; home and fixture columns). D-7 (sign-in) and D-8 (320/390 px) passed on the old code: regression guards. D-7b (settings) was RED. D-7b first failed by timeout, so it was changed to a count assertion before the code (D-172).
+- Mutation checks (only existing files edited; SHA-256 and `fc /b` identical after every restore): `.card` cap back → D-1 and D-2 (D-3 does not see it); media query at 1 px → D-1, D-3, D-8, DESIGN-7 (320, 390); settings without `card-narrow` → D-7b; `--max-width: 1400px` → D-1, D-2, D-6, D-9; menu button shown on desktop → D-6; squad column 20rem → D-5; raw `gap: 20px` → DESIGN-1 token scan; 20 px gap in one desktop column → DESIGN-7 home at 768 and 1280 only.
+- The first full gate failed once: 20b `L-2` at 768 px ("no label wider than its button"): the event page's left column was about 352 px. Narrower padding did not fix it; the grid became 3 : 2 (D-170) and L-2 passed unchanged. The D-1 unit test was updated for 3 : 2.
+- Exit gate `npm run gate`, exit 0: typecheck and lint exit 0; unit 17 files / 110 tests; db 16 / 72; api 11 / 59; e2e 214 passed; `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`.
+- Renders for the owner to LOOK at, in `screenshots/` (`*-1280.png`, 17 pages). I looked at `home-real-data-1280.png` and `fixture-open-1280.png`: two columns, nothing overlaps, the three answers are on one line, the four counts fit.
+
+**Known gaps and UNKNOWN**
+- For 20e: below 768 px a `.card` in the page stack is content-sized and centred, not full width (`margin: 0 auto` on a grid item; the season record starts at x = 68 at 320 px). It was like this before 20d and was left unchanged; D-3, D-4 and D-8 describe it. The player page was not given a layout: its stats card just gets wider.
+- UNKNOWN: the other 1280 px renders (squad, player, settings, sign-in, 404) were not looked at one by one; the D-tests and axe at 1280 px (home, event page, squad) pass. UNKNOWN: widths between 768 and 1200 px other than 768, 1280 and 1440 were not tested.
+- The mutation backups (`g20d.css.orig`, `settings20d.tsx.orig`) and the gate logs are in the scratchpad; the agent may not delete them.
+
+**Next session needs to know**
+- 20e (club polish: hero, next-match card, results rows, footer, full-width phone cards, player page layout) is next; plan first. A new file with styles joins `TSX_FILES` in `tests/unit/design-tokens.test.ts`. New desktop rules go in the `@media (min-width: 768px)` block of `globals.css`; the layout tests D-1 to D-10 and DESIGN-7 (per column) guard it. If the machine is low on memory, e2e can hang: free memory first.

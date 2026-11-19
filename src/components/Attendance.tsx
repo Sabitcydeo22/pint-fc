@@ -117,6 +117,9 @@ export default function Attendance({ matchId }: { matchId: string }) {
         <span className="muted">vs </span>
         {match.opponent}
       </h1>
+      {/* from 768 px: details, counts and answers on the left, the attendance list on the right (.fx-grid in globals.css) */}
+      <div className="fx-grid">
+      <div className="fx-col">
       <section aria-label="Match details" className="card stack-xs">
         <p className="muted">
           {match.competition} · {match.venue}
@@ -175,6 +178,8 @@ export default function Attendance({ matchId }: { matchId: string }) {
 
       {!notOpen ? <RsvpButtons matchId={match.id} open={open} me={me} onChanged={refreshQuietly} /> : null}
 
+      </div>
+      <div className="fx-col">
       <section aria-labelledby="list-title" className="card stack-sm">
         <h2 id="list-title">Attendance</h2>
         {attendees.length === 0 ? (
@@ -204,6 +209,8 @@ export default function Attendance({ matchId }: { matchId: string }) {
         )}
         <LiveClock serverNow={data.server_now} nowMs={nowMs} />
       </section>
+      </div>
+      </div>
     </>
   );
 }

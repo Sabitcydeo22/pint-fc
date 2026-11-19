@@ -59,9 +59,9 @@ const SHOTS: Array<[string, (page: Page) => Promise<void>, string]> = [
 ];
 
 for (const [name, open, proof] of SHOTS) {
-  test(`SHOTS [e2e] screenshots at 390 px and 320 px: ${name}`, async ({ browser }) => {
+  test(`SHOTS [e2e] screenshots at 390 px, 320 px and 1280 px: ${name}`, async ({ browser }) => {
     fs.mkdirSync(OUT, { recursive: true });
-    for (const width of [390, 320]) {
+    for (const width of [390, 320, 1280]) {
       const context = await browser.newContext({ viewport: { width, height: 844 }, baseURL: 'http://localhost:3100' });
       try {
         const page = await context.newPage();

@@ -201,7 +201,7 @@ Session 20 is the design session (owner's brief, 18 Nov 2026): make the site loo
 - **20a** tokens and spacing foundation (colour, spacing, type scale, weights, `.stack`, one accent, focus tokens). Fixes the cramped fixture cards.
 - **20b** the league table at 320 px and the "Not going" button, plus a 320/390/768/1280 layout matrix.
 - **20c** no-people assets: `public/img/*.svg`, crest, jersey, initials avatar, the CSP `img-src 'self' data:` (D-166 to D-168).
-- **20d** desktop layout up to 1200 px with a grid inside it.
+- **20d** desktop layout up to 1200 px with a grid inside it (one step at 768 px: home and event page in two columns, squad grid, wider header; sign-in and settings stay narrow; D-169 onwards). The player page and full-width phone cards are left for 20e.
 - **20e** club polish: hero, next-match card, results rows, footer, screenshots at four widths.
 
 ## Release
