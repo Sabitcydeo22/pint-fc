@@ -815,7 +815,7 @@
 
 ## session-20d — design: desktop layout up to 1200 px (2026-11-19)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Owner's answers to the plan and D-169 to D-172. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image used.
+**STATUS: DONE and committed as `2dc3a40`.** Owner's answers to the plan and D-169 to D-172. No install, nothing deleted, nothing pushed, no deploy, production untouched, no image used.
 
 **Done**
 - `globals.css`: `--max-width: 1200px`; `.card` has no cap; `.card-narrow` (420 px, centred, `width: 100%`) is used by sign-in and by a new wrapper in the settings page; one desktop step at 768 px (header and footer padding 24 px to line up with the page; home grid 2 equal columns; event grid 3 : 2). Column wrappers `.home-grid`, `.home-col`, `.fx-grid`, `.fx-col` are `display: contents` below 768 px. `page.tsx` (home) and `Attendance.tsx` wrap the sections without changing the DOM order. The squad grid needed no change (5 per row at 1280 px).
@@ -838,7 +838,7 @@
 
 ## session-20e-1 — design: home hero band, record row, balanced grid, full-width cards (2026-11-19)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-173 to D-177. No install, nothing deleted, nothing pushed, no deploy, production untouched, no photo added (`HERO_PHOTO = null`).
+**STATUS: DONE and committed as `ce34b25`.** Decisions D-173 to D-177. No install, nothing deleted, nothing pushed, no deploy, production untouched, no photo added (`HERO_PHOTO = null`).
 
 **Done**
 - New `src/components/Hero.tsx` and `src/lib/hero.ts` (photo slot, graphic fallback, only local `/img/` paths). `NextMatch.tsx` is the hero content (kicker, big opponent, four countdown tiles, button inside). `page.tsx`: hero, full-width `SeasonRecord` (`stat-grid-record`, six in a row from 768 px), results and table as two equal-height columns (`card-fill`). `globals.css`: tokens `--primary-deep`, `--shadow-card`; `.card` full width with accent top edge and shadow.
@@ -859,7 +859,7 @@
 
 ## session-20e-2 — squad chip, header account menu, hero fixes (2026-11-20)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-178 to D-181. No install, nothing deleted, nothing pushed, no deploy.
+**STATUS: DONE and committed as `7d65d42`.** Decisions D-178 to D-181. No install, nothing deleted, nothing pushed, no deploy.
 
 **Done**
 - Squad: number chip beside the name (two digits fit), equal-height cards, names wrap to two lines. Header: no underline, `name ▾` account menu (My settings, Sign out, Sign out of all devices). Hero: h1 visually hidden (kept for screen readers), "RSVP closes … EST" no longer orphans the zone. Files: `globals.css`, `Header.tsx`, `squad/page.tsx`, `page.tsx`, `NextMatch.tsx`; new tests `tests/unit/header-menu.test.ts`, `tests/e2e/polish-20e2.spec.ts`; five existing specs edited with the owner's yes (D-181).
@@ -878,7 +878,7 @@
 
 ## session-20e-3 — player identity panel, sporty squad cards, mid-width checks (2026-11-20)
 
-**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-182 to D-185. No install, nothing deleted, nothing pushed, no deploy, no file added to `public/img`.
+**STATUS: DONE and committed as `1e2530b`.** Decisions D-182 to D-185. No install, nothing deleted, nothing pushed, no deploy, no file added to `public/img`.
 
 **Done**
 - Player page: navy panel (position, name, nationality, big number) then the stats card; no image without a valid local photo. Squad: accent-bar cards with a big number, position label, two-line name, equal height. New `src/lib/photo.ts` (`playerPhotoSrc`), `PlayerAvatar.tsx` rewritten, `globals.css`, `players/[id]/page.tsx`, `squad/page.tsx`. New tests `tests/unit/player-photo.test.ts`, `tests/e2e/profile-20e3.spec.ts` (PLAYER-1 to 4, SQUAD-1, SQUAD-2, MID-2 for 8 pages x 4 widths, PROF-12 renders). Existing tests edited: D-185.
@@ -896,3 +896,22 @@
 
 **Next session needs to know**
 - Rest of 20e (results rows, footer) is still open; plan first. To show a real photo the owner adds a consented file to `public/img` and sets the player's `photo_url` to that path (jpg, jpeg, png or webp); no code change is needed.
+
+## production deploy 20 Nov (2026-11-20)
+
+**STATUS: DONE (docs-only record).** Decisions D-186 to D-190. No code changed in this task, nothing committed, nothing pushed.
+
+**Done**
+- About 22:55 the owner typed "po" and design sessions 20a to 20e-3 were deployed with `vercel deploy --prod`, using a short-lived team-scoped token.
+- Deployment `pintfc-4po1h56jz-sabit-pintfc`, aliases `pintfc-two.vercel.app` and `pintfc-sabit-pintfc.vercel.app`, Ready, target production.
+- Two temporary Vercel tokens were created and then deleted by the owner; no token value is in any file.
+- Git is not connected to the Vercel project; deploys are manual.
+
+**Proof**
+- The owner checked `/api/health` in Incognito: `{"ok":true}`, and the home page showed the new design.
+
+**Known gaps and UNKNOWN**
+- NOT checked in production: `/squad`, `/players/[id]`, `/fixtures/[id]`, the full-width desktop layout, sign-in with a real player.
+
+**Next session needs to know**
+- Production now runs the 20a to 20e-3 design. Check the unchecked pages above before relying on them. Any further production change needs a new manual deploy and the owner's "po".
