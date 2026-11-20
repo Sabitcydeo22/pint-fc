@@ -32,6 +32,8 @@ const TSX_FILES = [
   'src/components/Crest.tsx',
   'src/components/Jersey.tsx',
   'src/components/PlayerAvatar.tsx',
+  // session 20e-1
+  'src/components/Hero.tsx',
 ];
 
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -128,7 +130,7 @@ describe('DESIGN-3 colours come from tokens', () => {
   });
 
   it('DESIGN-3 [unit] every colour token is a 6-digit hex', () => {
-    const colourNames = ['ink', 'muted', 'primary', 'accent', 'bg', 'surface', 'ok', 'warn', 'bad', 'on-fill', 'on-dark-muted', 'focus', 'focus-on-dark'];
+    const colourNames = ['ink', 'muted', 'primary', 'accent', 'bg', 'surface', 'ok', 'warn', 'bad', 'on-fill', 'on-dark-muted', 'focus', 'focus-on-dark', 'primary-deep'];
     expect(colourNames.filter((n) => !/^#[0-9a-f]{6}$/i.test(tokens[n] ?? ''))).toEqual([]);
   });
 });
@@ -142,6 +144,8 @@ describe('DESIGN-4 contrast of the token pairs (WCAG AA)', () => {
     ['on-fill', 'ok', 4.5], ['on-fill', 'warn', 4.5], ['on-fill', 'bad', 4.5],
     ['ok', 'bg', 4.5], ['bad', 'bg', 4.5],
     ['on-fill', 'primary', 4.5], ['on-dark-muted', 'primary', 4.5],
+    // session 20e-1: the hero band and its countdown tiles
+    ['on-fill', 'primary-deep', 7], ['on-dark-muted', 'primary-deep', 4.5],
   ];
   for (const [fg, bg, min] of TEXT) {
     it(`DESIGN-4 [unit] text ${fg} on ${bg} is at least ${min}:1`, () => {
@@ -248,11 +252,26 @@ describe('D-1 desktop width (session 20d)', () => {
   });
 });
 
-describe('DESIGN-6 one accent', () => {
-  it('DESIGN-6 [unit] the accent colour is used by .btn-accent only, and only NextMatch (the home page action) asks for it', () => {
-    const users = [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) => /var\(--accent\)/.test(m[2])).map((m) => m[1].trim());
+describe('DESIGN-6 one accent colour, used in a named list of places (relaxed in session 20e-1, owner answer 3)', () => {
+  // Still ONE colour (--accent). It may appear on: the hero action (.btn-accent), the current nav link edge, the card top edge
+  // and the hero kicker. Any other rule using it fails this test, so a new place needs a new entry here on purpose.
+  const ACCENT_PLACES = ['.btn-accent', '.card', '.hero-kicker'];
+  const ACCENT_PLACE_PREFIXES = ['.nav-link[aria-current']; // session 20e-2
+  it('DESIGN-6 [unit] the accent colour is used only by the named places', () => {
+    const users = [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => /var\(--accent\)/.test(m[2]))
+      .flatMap((m) => m[1].split(',').map((s) => s.trim()));
     expect(users.length).toBeGreaterThan(0);
-    expect(users.filter((s) => !s.startsWith('.btn-accent'))).toEqual([]);
+    expect(users).toContain('.btn-accent');
+    expect(users.filter((s) => !ACCENT_PLACES.includes(s) && !ACCENT_PLACE_PREFIXES.some((p) => s.startsWith(p)))).toEqual([]);
+  });
+  it('DESIGN-6 [unit] only NextMatch (the home page action) asks for the accent button; no component names the colour itself', () => {
     expect(TSX_FILES.filter((f) => /var\(--accent\)|btn-accent/.test(noComments(read(f))))).toEqual(['src/components/NextMatch.tsx']);
+  });
+  it('DESIGN-6 [unit] the accent is not used as a fill on the hero or as text colour (edges and the action only)', () => {
+    const textOrFill = [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => /(^|[;\s])(color|background(-color)?)\s*:\s*var\(--accent\)/.test(m[2]))
+      .flatMap((m) => m[1].split(',').map((s) => s.trim()));
+    expect(textOrFill.filter((s) => s !== '.btn-accent')).toEqual([]);
   });
 });

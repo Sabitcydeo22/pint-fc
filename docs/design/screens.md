@@ -17,7 +17,8 @@ Own palette, not taken from any club or brand. Ratios are computed by `tests/uni
 | `--ink` | `#0B1F3A` | body text (navy) | 16.5:1 on white, 14.8:1 on `--surface` |
 | `--muted` | `#44546A` | secondary text, "RSVP closed" chip | 7.7:1 on white, 6.9:1 on `--surface` |
 | `--primary` | `#0B2A52` | header and footer bar, links, buttons (white text) | 14.3:1 on white; white on it 14.3:1 |
-| `--accent` | `#0A5CFF` | the ONE most important action per page (`.btn-accent`; home: "Going / Not going"), white text | 5.3:1 against white and white text on it 5.3:1 |
+| `--accent` | `#0A5CFF` | ONE colour, used only in a named list (DESIGN-6, D-174): the action `.btn-accent` (home: "Going / Not going", white text), the 4 px top edge of `.card`, the hero kicker edge, the current nav link edge (20e-2). Never a text colour. | 5.3:1 against white and white text on it 5.3:1; about 2.7:1 on the navy band (so the button has a white edge) |
+| `--primary-deep` | `#061A33` | the darker navy shape of the hero, the countdown tiles, the photo shade | white on it above 7:1 |
 | `--bg` / `--surface` | `#FFFFFF` / `#EEF3F9` | page / cards | — |
 | `--ok` / `--warn` / `--bad` | `#0F6B3A` / `#8A5300` / `#B3261E` | Going / Maybe / Not going and Win / Draw / Loss (always with a text label; status colours, not accent) | ≥ 6.3:1 with white text |
 | `--on-fill` | `#FFFFFF` | text on any filled colour | — |
@@ -37,8 +38,9 @@ Font: system UI stack (fast, no download). Base 100% (16 px by default), line he
 Common states: **loading** (skeleton blocks, `aria-busy`), **error** (message "Something went wrong. Try again." + `retry-button`, never raw error text), **empty** (per section).
 
 ### `/` Home — `page-home`
+Layout (session 20e-1): `<h1>PINT FC</h1>`, then the **hero band** `hero` (a dark navy rounded band inside the page column; behind the content a graphic fallback `hero-art`, or a local photo under an opaque shade when `HERO_PHOTO` in `src/lib/hero.ts` is set, which it is not), then the season record as a full-width row, then results and table in two equal columns from 768 px. Cards have a 4 px accent top edge, a shadow and are full width on a phone.
 Sections (each has loading/empty/error independently):
-1. **Next match** `next-match-card`: opponent, competition, venue, kickoff (`next-match-kickoff`), countdown `countdown` (+ `countdown-d/h/m/s`), cutoff line "RSVP closes Sat 5:00 PM EST" `rsvp-cutoff`, status chip `rsvp-status` (Open / RSVP closed). Link `go-to-event` → `/fixtures/[id]` (labelled "Going / Not going"). Empty: `next-match-empty` "No upcoming matches". After kickoff: "Kicked off".
+1. **Next match** `next-match-card` (inside the hero; the "Next match" heading is a small caps kicker with a bright-blue left edge; the opponent is the big type; the countdown is four tiles; the button is full width of its block with a white edge): opponent, competition, venue, kickoff (`next-match-kickoff`), countdown `countdown` (+ `countdown-d/h/m/s`), cutoff line "RSVP closes Sat 5:00 PM EST" `rsvp-cutoff`, status chip `rsvp-status` (Open / RSVP closed). Link `go-to-event` → `/fixtures/[id]` (labelled "Going / Not going"). Empty: `next-match-empty` "No upcoming matches". After kickoff: "Kicked off".
 2. **Season record** `season-record`: W D L, GF, GA, played. Empty `season-record-empty` ("No results yet").
 3. **Latest results** `latest-results` (rows `result-row`, 5 max, newest first). Empty `results-empty`.
 4. **League table (mini)** `mini-table` rows `table-row`, our row `table-row-us` with "PINT FC" bold + bar, caption `table-snapshot-date` ("As of …"). Empty `table-empty`.

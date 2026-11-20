@@ -202,7 +202,7 @@ Session 20 is the design session (owner's brief, 18 Nov 2026): make the site loo
 - **20b** the league table at 320 px and the "Not going" button, plus a 320/390/768/1280 layout matrix.
 - **20c** no-people assets: `public/img/*.svg`, crest, jersey, initials avatar, the CSP `img-src 'self' data:` (D-166 to D-168).
 - **20d** desktop layout up to 1200 px with a grid inside it (one step at 768 px: home and event page in two columns, squad grid, wider header; sign-in and settings stay narrow; D-169 onwards). The player page and full-width phone cards are left for 20e.
-- **20e** club polish: hero, next-match card, results rows, footer, screenshots at four widths.
+- **20e** club polish, split in three: **20e-1** home hero band (photo slot, graphic fallback), countdown tiles, one-row season record, balanced home grid, richer cards, full-width phone cards, mid-width tests for home (D-173 onwards); **20e-2** squad badge and equal cards, header links and account menu; **20e-3** player page layout, mid-width tests for all pages, screenshots at 320, 390, 768 and 1280.
 
 ## Release
 Session 19's last step is the production deploy and needs the owner's explicit "yes". Session 18 needs the owner to create the Supabase project (I give the steps then) and confirms the JWT-lifetime setting on the Free plan (D-13).

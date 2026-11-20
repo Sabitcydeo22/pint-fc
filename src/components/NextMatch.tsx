@@ -63,18 +63,22 @@ export default function NextMatch() {
 
   if (state.kind === 'loading') {
     return (
-      <section aria-labelledby="next-match-title" aria-busy="true" data-testid="next-match-loading" className="card stack-sm">
-        <h2 id="next-match-title">Next match</h2>
+      <section aria-labelledby="next-match-title" aria-busy="true" data-testid="next-match-loading" className="hero-state stack-sm">
+        <h2 id="next-match-title" className="hero-kicker">
+          Next match
+        </h2>
         <p className="muted">Loading…</p>
       </section>
     );
   }
   if (state.kind === 'error') {
     return (
-      <section aria-labelledby="next-match-title" data-testid="next-match-error" className="card stack-sm">
-        <h2 id="next-match-title">Next match</h2>
+      <section aria-labelledby="next-match-title" data-testid="next-match-error" className="hero-state stack-sm">
+        <h2 id="next-match-title" className="hero-kicker">
+          Next match
+        </h2>
         <p role="alert">Something went wrong. Try again.</p>
-        <button type="button" className="btn" data-testid="retry-button" onClick={load}>
+        <button type="button" className="btn btn-secondary" data-testid="retry-button" onClick={load}>
           Try again
         </button>
       </section>
@@ -83,8 +87,10 @@ export default function NextMatch() {
   const { data } = state;
   if (!data.next_match) {
     return (
-      <section aria-labelledby="next-match-title" className="card stack-sm">
-        <h2 id="next-match-title">Next match</h2>
+      <section aria-labelledby="next-match-title" className="hero-state stack-sm">
+        <h2 id="next-match-title" className="hero-kicker">
+          Next match
+        </h2>
         <p data-testid="next-match-empty">No upcoming matches</p>
       </section>
     );
@@ -108,53 +114,73 @@ function NextMatchCard({ match, serverNow }: { match: NextMatchRow; serverNow: s
   const open = match.rsvp_open && nowMs < Date.parse(match.cutoff_at);
 
   return (
-    <section aria-labelledby="next-match-title" data-testid="next-match-card" className="card stack-sm">
-      <h2 id="next-match-title">Next match</h2>
-      <div className="stack-xs">
-        <p className="t-lg bold">
-          <span className="muted">vs </span>
+    <section aria-labelledby="next-match-title" data-testid="next-match-card" className="hero-match">
+      <div className="hero-info stack-sm">
+        <h2 id="next-match-title" className="hero-kicker">
+          Next match
+        </h2>
+        <p className="hero-opponent bold">
+          <span className="hero-vs">vs </span>
           <span data-testid="next-match-opponent">{match.opponent}</span>
         </p>
-        <p className="muted" data-testid="next-match-competition">
-          {match.competition}
-        </p>
-        <p>
-          <span className="muted">Venue: </span>
-          <span data-testid="next-match-venue">{match.venue}</span>
-        </p>
-        <p>
-          <span className="muted">Kickoff: </span>
-          <time dateTime={match.kickoff_at} data-testid="next-match-kickoff">
-            {formatKickoff(match.kickoff_at)}
-          </time>
-        </p>
+        <div className="stack-xs">
+          <p className="muted" data-testid="next-match-competition">
+            {match.competition}
+          </p>
+          <p>
+            <span className="muted">Venue: </span>
+            <span data-testid="next-match-venue">{match.venue}</span>
+          </p>
+          <p>
+            <span className="muted">Kickoff: </span>
+            <time dateTime={match.kickoff_at} data-testid="next-match-kickoff">
+              {formatKickoff(match.kickoff_at)}
+            </time>
+          </p>
+        </div>
       </div>
 
-      <div data-testid="countdown" role="timer" aria-live="off" className="t-xl bold">
-        {view.kickedOff ? (
-          'Kicked off'
-        ) : (
-          <>
-            <span data-testid="countdown-d">{view.days}</span>d <span data-testid="countdown-h">{view.hours}</span>h{' '}
-            <span data-testid="countdown-m">{view.minutes}</span>m <span data-testid="countdown-s">{view.seconds}</span>s
-          </>
-        )}
+      <div className="hero-action stack-sm">
+        <div data-testid="countdown" role="timer" aria-live="off" className={view.kickedOff ? 'countdown countdown-done' : 'countdown'}>
+          {view.kickedOff ? (
+            'Kicked off'
+          ) : (
+            <>
+              <span data-testid="countdown-tile" className="cd-tile">
+                <span data-testid="countdown-d" className="cd-num">{view.days}</span>
+                <span className="cd-unit">Days</span>
+              </span>{' '}
+              <span data-testid="countdown-tile" className="cd-tile">
+                <span data-testid="countdown-h" className="cd-num">{view.hours}</span>
+                <span className="cd-unit">Hrs</span>
+              </span>{' '}
+              <span data-testid="countdown-tile" className="cd-tile">
+                <span data-testid="countdown-m" className="cd-num">{view.minutes}</span>
+                <span className="cd-unit">Min</span>
+              </span>{' '}
+              <span data-testid="countdown-tile" className="cd-tile">
+                <span data-testid="countdown-s" className="cd-num">{view.seconds}</span>
+                <span className="cd-unit">Sec</span>
+              </span>
+            </>
+          )}
+        </div>
+
+        <p>
+          <span data-testid="rsvp-status" className={open ? 'chip chip-ok' : 'chip'}>
+            {open ? 'Open' : 'RSVP closed'}
+          </span>{' '}
+          <span className="muted" data-testid="rsvp-cutoff">
+            RSVP {open ? 'closes' : 'closed'} {formatKickoff(match.cutoff_at)}
+          </span>
+        </p>
+
+        <p>
+          <Link href={`/fixtures/${match.id}`} prefetch={false} className="btn btn-accent btn-hero" data-testid="go-to-event">
+            Going / Not going
+          </Link>
+        </p>
       </div>
-
-      <p>
-        <span data-testid="rsvp-status" className={open ? 'chip chip-ok' : 'chip'}>
-          {open ? 'Open' : 'RSVP closed'}
-        </span>{' '}
-        <span className="muted" data-testid="rsvp-cutoff">
-          RSVP {open ? 'closes' : 'closed'} {formatKickoff(match.cutoff_at)}
-        </span>
-      </p>
-
-      <p>
-        <Link href={`/fixtures/${match.id}`} prefetch={false} className="btn btn-accent" data-testid="go-to-event">
-          Going / Not going
-        </Link>
-      </p>
     </section>
   );
 }

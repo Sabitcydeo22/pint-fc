@@ -53,7 +53,7 @@ export default function LatestResults() {
   };
 
   return (
-    <section aria-labelledby="latest-results-title" aria-busy={state.kind === 'loading'} className="card stack-sm">
+    <section aria-labelledby="latest-results-title" aria-busy={state.kind === 'loading'} className="card card-fill stack-sm">
       <h2 id="latest-results-title">Latest results</h2>
       {state.kind === 'loading' ? (
         <p className="muted" data-testid="results-loading">

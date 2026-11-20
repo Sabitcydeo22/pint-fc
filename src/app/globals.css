@@ -6,6 +6,7 @@
   --ink: #0b1f3a;
   --muted: #44546a;
   --primary: #0b2a52;
+  --primary-deep: #061a33;
   --accent: #0a5cff;
   --bg: #ffffff;
   --surface: #eef3f9;
@@ -40,6 +41,7 @@
   --radius: 8px;
   --radius-pill: 999px;
   --max-width: 1200px;
+  --shadow-card: 0 2px 8px rgba(11, 31, 58, 0.16);
 }
 
 *,
@@ -293,11 +295,19 @@ a {
 }
 
 /* ---------- cards, forms ---------- */
+/* a card fills its column (full width on a phone too, session 20e-1); the accent top edge and the shadow make it less flat */
 .card {
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   padding: var(--space-5) var(--space-4);
+  border-top: var(--space-1) solid var(--accent);
   border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+/* a card that fills the height of its row (the results card beside the taller table): its list takes the spare height */
+.card-fill {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 /* forms and single-column pages (sign-in, settings) keep a narrow, centred column of at most 420 px (session 20d: `.card` itself is no longer capped) */
 .card-narrow {
@@ -502,6 +512,7 @@ a {
 /* latest results */
 .result-list {
   display: grid;
+  grid-auto-rows: minmax(44px, 1fr);
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -513,6 +524,9 @@ a {
   align-items: center;
   gap: var(--space-1) var(--space-3);
   min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--bg);
 }
 .result-outcome {
   display: inline-block;
@@ -694,6 +708,154 @@ a {
   white-space: nowrap;
 }
 
+/* ---------- home hero band (session 20e-1) ---------- */
+/* Dark band: navy with a diagonal split into two navy shapes. Photo (under an opaque shade) or the pitch-line graphic sit behind
+   the content. Text on it is white or light blue-gray (--on-dark-muted); the accent appears only on the kicker edge and the button. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background-color: var(--primary);
+  background-image: linear-gradient(115deg, var(--primary) 0 60%, var(--primary-deep) 60% 100%);
+  color: var(--on-fill);
+  box-shadow: var(--shadow-card);
+}
+.hero .muted {
+  color: var(--on-dark-muted);
+}
+.hero :focus-visible {
+  outline-color: var(--focus-on-dark);
+}
+/* a button keeps the standard --focus ring; on the dark band it sits on a white halo so it stays visible (DESIGN-9) */
+.hero .btn:focus-visible {
+  outline-color: var(--focus);
+  box-shadow: 0 0 0 var(--space-2) var(--focus-on-dark);
+}
+.hero-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.12;
+}
+.hero-line {
+  fill: none;
+  stroke: var(--on-fill);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+}
+/* the shade: an opaque navy layer over the photo; tests/unit/hero.test.ts proves white text on it passes 4.5:1 even over a white photo */
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  background: var(--primary-deep);
+  opacity: 0.8;
+}
+/* the side padding sits on the content section (the same 16 px, and 12 px below 360 px, as every card: L-5) */
+.hero-body {
+  position: relative;
+  padding: var(--space-5) 0;
+}
+.hero-match {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0 var(--space-4);
+}
+.hero-state {
+  min-width: 0;
+  padding: 0 var(--space-4);
+}
+@media (max-width: 359px) {
+  .hero-match,
+  .hero-state {
+    padding: 0 var(--space-3);
+  }
+}
+.hero-info,
+.hero-action {
+  min-width: 0;
+}
+.hero-info > *,
+.hero-action > * {
+  margin-block: 0;
+  min-width: 0;
+}
+.hero-action {
+  display: grid;
+  gap: var(--space-3);
+}
+/* the kicker: a small caps label with a bright-blue edge */
+.hero-kicker {
+  padding-left: var(--space-2);
+  border-left: var(--space-1) solid var(--accent);
+  color: var(--on-dark-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hero-opponent {
+  font-size: var(--text-2xl);
+  line-height: 1.15;
+}
+.hero-vs {
+  color: var(--on-dark-muted);
+}
+/* the countdown: four tiles in one row, number over its unit */
+.countdown {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.countdown-done {
+  display: block;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+}
+.cd-tile {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius);
+  background: var(--primary-deep);
+}
+.cd-num {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+}
+.cd-unit {
+  color: var(--on-dark-muted);
+  font-size: var(--text-sm);
+}
+/* the action: full width of its block, white edge so it stands out from the dark band */
+.btn-hero {
+  width: 100%;
+  font-size: var(--text-lg);
+}
+.hero .btn-accent {
+  border-color: var(--on-fill);
+}
+.hero .btn-secondary {
+  border-color: var(--on-fill);
+}
+
+/* season record: three and three on a phone, six in one row from 768 px; a blue-gray bar marks each stat */
+.stat-grid-record {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.stat-grid-record .stat {
+  padding-left: var(--space-2);
+  border-left: var(--space-1) solid var(--primary);
+}
+
 /* desktop (session 20d): one step at 768 px. Header and footer padding match the page padding so their edges line up. */
 @media (min-width: 768px) {
   .page {
@@ -730,9 +892,47 @@ a {
     min-width: 0;
     margin-block: 0;
   }
-  /* inside a column a card fills the column (a narrow card keeps its own margin) */
-  .card:not(.card-narrow) {
-    margin: 0;
+  /* home: results and table are two cards of one height (nothing is left empty under either) */
+  .home-grid {
+    align-items: stretch;
+  }
+  .home-col {
+    align-content: stretch;
+  }
+  .stat-grid-record {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .stat-grid-record .stat-value {
+    font-size: var(--text-2xl);
+  }
+  .hero-body {
+    padding: var(--space-6) 0;
+  }
+  .hero-match {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+    align-items: center;
+  }
+  /* a thin light diagonal where the two navy shapes meet (decoration behind the content) */
+  .hero {
+    background-image: linear-gradient(115deg, transparent 0 55%, var(--on-dark-muted) 55% 55.6%, transparent 55.6% 100%),
+      linear-gradient(115deg, var(--primary) 0 55.6%, var(--primary-deep) 55.6% 100%);
+  }
+  .hero-art {
+    opacity: 0.16;
+  }
+}
+@media (min-width: 480px) {
+  .cd-num {
+    font-size: var(--text-2xl);
+  }
+}
+@media (min-width: 1024px) {
+  .cd-num {
+    font-size: var(--text-3xl);
+  }
+  .hero-opponent {
+    font-size: var(--text-3xl);
   }
 }
 

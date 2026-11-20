@@ -5,7 +5,8 @@
 //  D-5 squad: at least 4 cards per row at 1280 px, one per row at 320 px
 //  D-6 header: wider and on one row at 1280 px; header and footer edges line up with the page content
 //  D-7 [regression guard] sign-in keeps the narrow card; D-7b settings is narrow and centred (it was 912 px wide before 20d)
-//  D-8 [regression guard] at 320 and 390 px a card fills the page width minus the page padding
+//  D-8 (replaced in 20e-1 by CARD-1) at 320 and 390 px a card was centred inside the page padding; now it fills the column
+//  20e-1: D-3 now describes the hero band, a full-width record and two columns for results and table
 //  D-9 nothing is wider than 1200 px at 1440 px, and everything stays centred
 //  D-10 axe colour contrast at 1280 px (home, fixture, squad)
 // Data comes from page.route mocks (as in sessions 07, 14, 20a and 20b); squad, sign-in and settings are real.
@@ -76,10 +77,14 @@ const HOME = {
 };
 
 for (const width of [320, 390, 768, 1280]) {
-  test(`D-3 [e2e] home layout at ${width} px: ${width >= 768 ? 'two columns' : 'one column'}, DOM order unchanged`, async ({ page }) => {
+  // 20e-1: the next match is now the hero band, the record is a full-width row under it, and only results and table share
+  // two columns (so no column is left with an empty gap). The DOM order is unchanged.
+  test(`D-3 [e2e] home layout at ${width} px: ${width >= 768 ? 'hero and record full width, results and table side by side' : 'one column'}, DOM order unchanged`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await openHome(page);
     const [next, record, results, table] = [await box(page, HOME.next), await box(page, HOME.record), await box(page, HOME.results), await box(page, HOME.table)];
+    expect(await page.locator('[data-testid="hero"]').count(), 'the hero band exists').toBe(1);
+    const hero = await box(page, '[data-testid="hero"]');
     // the DOM order is next match, record, results, table (keyboard and screen reader order)
     const order = await page.evaluate((sels) => {
       const els = sels.map((s) => document.querySelector(s) as Element);
@@ -87,18 +92,19 @@ for (const width of [320, 390, 768, 1280]) {
     }, [HOME.next, HOME.record, HOME.results, HOME.table]);
     expect(order, 'DOM order').toEqual([true, true, true]);
     if (width >= 768) {
-      expect(record.x, 'record is under the next match').toBeCloseTo(next.x, 0);
-      expect(record.y, 'record is below the next match').toBeGreaterThanOrEqual(next.bottom);
-      expect(table.x, 'table is under the results').toBeCloseTo(results.x, 0);
-      expect(table.y, 'table is below the results').toBeGreaterThanOrEqual(results.bottom);
-      expect(results.x, 'results are in the right column').toBeGreaterThanOrEqual(next.right);
-      expect(Math.round(results.y), 'both columns start on the same line').toBe(Math.round(next.y));
+      expect(hero.y, 'the hero holds the next match').toBeLessThanOrEqual(next.y);
+      expect(record.x, 'record has the left edge of the hero').toBeCloseTo(hero.x, 0);
+      expect(record.width, 'record is as wide as the hero').toBeCloseTo(hero.width, 0);
+      expect(record.y, 'record is below the hero').toBeGreaterThanOrEqual(hero.bottom);
+      expect(results.y, 'results are below the record').toBeGreaterThanOrEqual(record.bottom);
+      expect(table.y, 'table is below the record').toBeGreaterThanOrEqual(record.bottom);
+      expect(table.x, 'table is in the right column').toBeGreaterThanOrEqual(results.right);
+      expect(Math.round(table.y), 'both columns start on the same line').toBe(Math.round(results.y));
     } else {
-      // below 768 px the cards are as they were before 20d: stacked, each one centred (they are content-sized, see D-8)
+      // below 768 px: one stack (the cards are full width, see CARD-1)
       for (const [a, b] of [[next, record], [record, results], [results, table]] as const) {
         expect(b.y, 'one column: below the previous card').toBeGreaterThanOrEqual(a.bottom);
       }
-      for (const b of [next, record, results, table]) expect(Math.abs(b.x + b.width / 2 - width / 2), 'centred').toBeLessThanOrEqual(1);
     }
   });
 
@@ -191,18 +197,30 @@ test('D-7b [e2e] settings is narrow (at most 420 px) and centred at 1280 px', as
   expect(toggle.right, 'the form is inside the narrow column').toBeLessThanOrEqual(col.right);
 });
 
-for (const width of [320, 390]) {
-  test(`D-8 [e2e] regression guard: at ${width} px a card is centred and inside the 16 px page padding (as before 20d)`, async ({ page }) => {
+// 20e-1 (owner answer 6): below 768 px a card is as wide as the page column (it was content-sized and centred: old D-8).
+// The old assertions (inside the 16 px page padding, centred) still hold and are kept; "full width" is added.
+for (const width of [320, 390, 600, 767]) {
+  test(`CARD-1 [e2e] at ${width} px every card fills the page column (16 px page padding on each side)`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await openHome(page);
-    for (const sel of Object.values(HOME)) {
+    // the next match is the hero band (its section sits inside the band's own padding), so the band is the card to measure
+    for (const sel of ['[data-testid="hero"]', HOME.record, HOME.results, HOME.table]) {
       const b = await box(page, sel);
       expect(b.x, `${sel} left`).toBeGreaterThanOrEqual(16 - 0.5);
       expect(b.right, `${sel} right`).toBeLessThanOrEqual(width - 16 + 0.5);
       expect(Math.abs(b.x + b.width / 2 - width / 2), `${sel} centred`).toBeLessThanOrEqual(1);
+      expect(b.width, `${sel} full width`).toBeGreaterThanOrEqual(width - 32 - 1);
     }
   });
 }
+
+test('CARD-1b [e2e] regression guard: sign-in keeps its narrow card (420 px, centred) at 600 px', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 844 });
+  await page.goto('/sign-in');
+  const card = await box(page, '[data-testid="page-sign-in"] .card-narrow');
+  expect(card.width).toBeLessThanOrEqual(420);
+  expect(Math.abs(card.x + card.width / 2 - 300), 'centred').toBeLessThanOrEqual(1);
+});
 
 test('D-9 [e2e] at 1440 px page, header and footer are between 1100 and 1200 px wide and centred', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

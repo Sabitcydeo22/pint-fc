@@ -63,7 +63,7 @@ export default function SeasonRecord() {
       ) : state.record === null ? (
         <p data-testid="season-record-empty">No results yet</p>
       ) : (
-        <dl data-testid="season-record" className="stat-grid">
+        <dl data-testid="season-record" className="stat-grid stat-grid-record">
           {STATS.map((s) => (
             <div key={s.id} className="stat">
               <dt className="muted t-sm">{s.label}</dt>

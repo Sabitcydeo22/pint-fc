@@ -835,3 +835,24 @@
 
 **Next session needs to know**
 - 20e (club polish: hero, next-match card, results rows, footer, full-width phone cards, player page layout) is next; plan first. A new file with styles joins `TSX_FILES` in `tests/unit/design-tokens.test.ts`. New desktop rules go in the `@media (min-width: 768px)` block of `globals.css`; the layout tests D-1 to D-10 and DESIGN-7 (per column) guard it. If the machine is low on memory, e2e can hang: free memory first.
+
+## session-20e-1 — design: home hero band, record row, balanced grid, full-width cards (2026-11-19)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-173 to D-177. No install, nothing deleted, nothing pushed, no deploy, production untouched, no photo added (`HERO_PHOTO = null`).
+
+**Done**
+- New `src/components/Hero.tsx` and `src/lib/hero.ts` (photo slot, graphic fallback, only local `/img/` paths). `NextMatch.tsx` is the hero content (kicker, big opponent, four countdown tiles, button inside). `page.tsx`: hero, full-width `SeasonRecord` (`stat-grid-record`, six in a row from 768 px), results and table as two equal-height columns (`card-fill`). `globals.css`: tokens `--primary-deep`, `--shadow-card`; `.card` full width with accent top edge and shadow.
+- Tests: new `hero.test.ts` (unit), `hero.spec.ts`, `mid-widths.spec.ts`; changed `desktop-layout.spec.ts` (D-3, old D-8 became CARD-1), `design-tokens.test.ts` (DESIGN-6 relaxed to a named list, additions only otherwise). Details in D-177.
+
+**Proof**
+- RED first (stubs for `hero.ts` and `Hero.tsx`): unit 21 failed on assertions (for example `expected 'https://example.com/x.jpg' to be null`, `expected [ 'primary-deep' ] to deeply equal []`); e2e hero 20+ failed (`Expected: 1 Received: 0`, REC-1 `Expected: 1 Received: 2`, COL-1 `Expected: >= 780 Received: 148`), CARD-1 `Expected: >= 287 Received: 182`, MID-1 7 of 7. Guards (passed on old code): CARD-1b, MID-1 header/overflow/44 px parts, DESIGN-6 and the card-contrast check.
+- Mutations, each restored (SHA-256 and `fc /b` identical): validator accepts anything (HERO-1, HERO-3); shade opacity 0.2 (HERO-7); raw `rgba` in `.card` (CARD-2, DESIGN-3); accent on header links (DESIGN-6 x2); `HERO_PHOTO` set (HERO-2 x2); art hidden (HERO-5); next match outside the hero (HERO-4); button edge back to accent (HERO-8, 2.7:1); countdown 48 px at all widths (HERO-6 at 320 and 390 only after the test was strengthened: the first version passed because the body breaks words anywhere); record grid `auto-fit 150px` (REC-1 and MID-1 at 768 to 1024, not 1100 and up); results card not stretched (COL-1); card `width: auto` (CARD-1).
+- Exit gate `npm run gate`, exit 0: typecheck and lint 0; unit 18 files / 139; db 16 / 72; api 11 / 59; e2e 246 passed; `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`.
+
+**Known gaps and UNKNOWN**
+- Not done on purpose: items 5, 7, 8, 9, 10, 11, 12 of the plan (20e-2, 20e-3); no 768 px screenshots yet. Photo path (question 11) undecided.
+- UNKNOWN: how the band looks with a real photo (none exists); the thin diagonal stripe passes behind some text from 768 px (decoration, axe passes). With few results the results rows grow tall to fill the card (looks airy).
+- Existing tests L-5 and AC-5.4 were not edited: the hero's side padding sits on its content section and the pitch SVG uses `meet` so they pass unchanged.
+
+**Next session needs to know**
+- 20e-2: squad badge and equal cards, header links and account menu (`.nav-link[aria-current…]` is already allowed by DESIGN-6). New styled files join `TSX_FILES`. `auth.spec.ts` and D-6 touch the header controls.
