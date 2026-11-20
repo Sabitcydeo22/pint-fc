@@ -8,7 +8,7 @@ Final full gate, Vercel project setup, preview deploy, owner review, and the pro
 session-18
 
 ## Read first
-- docs/requirements/PINTFC-MVP-Requirements.pdf page 3 ("Done means") and docs/REQUIREMENTS.md
+- the course requirements document (3 pages, 38 acceptance checks; not included in this repository) page 3 ("Done means") and docs/REQUIREMENTS.md
 - docs/design/architecture.md §6
 - PROGRESS.md
 - Also: CLAUDE.md rules (tests first; ask before installs, Supabase/Vercel changes, commits).

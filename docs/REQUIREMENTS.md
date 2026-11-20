@@ -1,9 +1,9 @@
 # PINT FC MVP — Requirements
 
-Source: `docs/requirements/PINTFC-MVP-Requirements.pdf` (3 pages, "docs/MVP.md at commit 47b5ac1").
+Source: the course requirements document, called "the PDF" in this repository (3 pages, 38 acceptance checks; not included in this repository).
 The longer spec (v0.3) is **not** in `docs/requirements/`. So every check below is **derived**: the ID comes from the PDF, the wording is mine. Inside each area the PDF gives only the ID range, not what each number means, so *which behaviour sits under which number is my assignment*. If the owner gets spec v0.3, the wording must be re-matched (see Q1).
 
-Ignored from the PDF, per the owner: the instructor's Vercel team (`cydeo-learners/pintfc`), Supabase project (`pintfc`) and screens file. We deploy to the owner's accounts (Vercel team `sabit-pintfc`, Supabase org `sabit`) and design our own screens. "The owner" = the product owner.
+Ignored from the PDF, per the owner: the instructor's own hosting, database and screens file from the course document. We deploy to the owner's accounts (Vercel team `sabit-pintfc`, Supabase org `sabit`) and design our own screens. "The owner" = the product owner.
 
 ---
 
