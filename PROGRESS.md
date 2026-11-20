@@ -875,3 +875,24 @@
 
 **Next session needs to know**
 - 20e-3 (the rest of 20e: results rows, footer, player page layout) is next; plan first. Header controls now live in `account-trigger` / `account-panel`; use them in any new test.
+
+## session-20e-3 — player identity panel, sporty squad cards, mid-width checks (2026-11-20)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-182 to D-185. No install, nothing deleted, nothing pushed, no deploy, no file added to `public/img`.
+
+**Done**
+- Player page: navy panel (position, name, nationality, big number) then the stats card; no image without a valid local photo. Squad: accent-bar cards with a big number, position label, two-line name, equal height. New `src/lib/photo.ts` (`playerPhotoSrc`), `PlayerAvatar.tsx` rewritten, `globals.css`, `players/[id]/page.tsx`, `squad/page.tsx`. New tests `tests/unit/player-photo.test.ts`, `tests/e2e/profile-20e3.spec.ts` (PLAYER-1 to 4, SQUAD-1, SQUAD-2, MID-2 for 8 pages x 4 widths, PROF-12 renders). Existing tests edited: D-185.
+
+**Proof**
+- RED first (stub `photo.ts`, old components): unit 8 of 24 failed on assertions (`expected null to be '/img/ali-khan.jpg'`, `expected '<div class="avatar"…' not to match /<img|<svg/i`); e2e 10 failed on assertions (PLAYER-1/2/4 `identity panel Expected: 1 Received: 0`, SQUAD-1 `cards under 72 px Expected: 0 Received: 37`). Guards (passed on old code): PLAYER-3, SQUAD-2, MID-2 (32 tests), PHOTO-2 second test, PHOTO-3, PHOTO-4 foreign path. The finer checks of PLAYER-1/2/4 and SQUAD-1 were first reached on the new code, so their redness is shown by the mutations below.
+- Mutations (SHA-256 and `fc /b` identical after every restore): number 24 px → PLAYER-1 `Received: 24`; grey position text → PLAYER-1 contrast 1.86; `<img>` when no photo → PLAYER-2 x2, ASSET-6 x2, unit PHOTO-4 x2; accent bar 2 px → SQUAD-1 (37 cards); squad number small → SQUAD-1; nationality without consent → PLAYER-3; no line clamp → SQUAD-2; 60 rem panel text → MID-2 (player pages, 602 px scroll); any string accepted as photo → PHOTO-1 (12 tests); raw `photo_url` in the page → PHOTO-2, ASSET-4 x2. M3 first ran with a broken command (`;` under cmd) and was re-run. NOT mutation-checked: PHOTO-3 (a mutation needs a new file in `public/img`, which is forbidden and could not be undone).
+- Exit gate `npm run gate`, exit 0: typecheck and lint 0; unit 20 files / 169; db 16 / 72; api 11 / 59; e2e 312 passed; `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`. Before the six e2e test edits the full e2e run had 6 failures, all old expectations (jersey, initials, chip, seed `.svg` photo).
+- I looked at `player-consented-20e3-390.png` and `squad-20e3-768.png`: the panel and cards look as intended, a wrapped name keeps its row one height.
+
+**Known gaps and UNKNOWN**
+- NO e2e shows a real photo: no photo file exists and none was added, and the seed's `photo_url` is an `.svg` the rule rejects. The photo path is proven only by unit tests (PHOTO-1, PHOTO-4 renders an `<img>` for `/img/ali-khan.jpg` in markup). UNKNOWN: how a real photo looks in the panel (the 120 px square with the number chip).
+- The other renders (`player-*-20e3-*`, `squad-20e3-390/1280`, `header-20e3-*`, `event-20e3-768`) were written but not looked at.
+- The mutation backups are in the system temp folder `m20e3`; the agent may not delete them.
+
+**Next session needs to know**
+- Rest of 20e (results rows, footer) is still open; plan first. To show a real photo the owner adds a consented file to `public/img` and sets the player's `photo_url` to that path (jpg, jpeg, png or webp); no code change is needed.

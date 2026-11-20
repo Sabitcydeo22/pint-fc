@@ -77,7 +77,7 @@ describe('ASSET-4 no picture of anything but plain SVG graphics', () => {
       if (/next\/image/.test(text)) bad.push(`${file}: next/image`);
       if (/url\(\s*['"]?(https?:|data:image)/i.test(text)) bad.push(`${file}: css image url`);
       for (const m of text.matchAll(/<img\b[^>]*>/g)) {
-        const ok = file === 'src/components/PlayerAvatar.tsx' && /src="\/img\/placeholder-player\.svg"/.test(m[0]);
+        const ok = file === 'src/components/PlayerAvatar.tsx' && /src=\{src\}/.test(m[0]);
         if (!ok) bad.push(`${file}: <img>`);
       }
     }

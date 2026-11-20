@@ -1,25 +1,27 @@
-// The picture on a player profile: never a photo, never a person (owner's content rule). A player who consented to a
-// photo (`photo`) gets the neutral local jersey FILE with the shirt number on it; everyone else gets the inline jersey
-// with initials and number. The database `photo_url` value is NOT used here, only whether the player consented and has
-// one: the page can never load an image from anywhere but /img/ (D-166). It is decoration: the name is the page heading.
-import { initials } from '../lib/initials';
-import Jersey from './Jersey';
+// The graphic on the player panel (session 20e-3): never a person, never a body. With a valid LOCAL photo
+// (`playerPhotoSrc`, only a plain /img/ file; the page passes it only for a player who consented) it shows that photo
+// with the shirt number on a chip. Without one it shows the shirt number as a big round graphic, no image at all.
+// It is decoration: the name is the page heading.
+import { playerPhotoSrc } from '../lib/photo';
 
-export default function PlayerAvatar({ name, shirtNumber, photo }: { name: string; shirtNumber: number; photo: boolean }) {
-  if (photo) {
+export default function PlayerAvatar({ shirtNumber, photoSrc }: { shirtNumber: number; photoSrc: string | null }) {
+  const src = playerPhotoSrc(photoSrc);
+  if (src) {
     return (
-      <div className="avatar avatar-solo">
-        {/* eslint-disable-next-line @next/next/no-img-element -- a small local SVG from /public, nothing to optimise */}
-        <img data-testid="player-photo" className="avatar-art" src="/img/placeholder-player.svg" alt="" width={120} height={120} />
-        <span className="avatar-number">{shirtNumber}</span>
+      <div className="player-media">
+        {/* eslint-disable-next-line @next/next/no-img-element -- a local file from /public chosen by the owner, nothing to optimise */}
+        <img data-testid="player-photo" className="player-photo" src={src} alt="" width={120} height={120} />
+        <span data-testid="player-number" className="player-number player-number-chip">
+          {shirtNumber}
+        </span>
       </div>
     );
   }
   return (
-    <div className="avatar" data-testid="player-avatar">
-      <Jersey className="avatar-art" />
-      <span className="avatar-initials">{initials(name)}</span>
-      <span className="avatar-number">{shirtNumber}</span>
+    <div className="player-media" data-testid="player-avatar" aria-hidden="true">
+      <span data-testid="player-number" className="player-number">
+        {shirtNumber}
+      </span>
     </div>
   );
 }

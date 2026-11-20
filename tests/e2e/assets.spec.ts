@@ -23,10 +23,6 @@ const visible = players.map((p, i) => ({ p, n: i + 1 })).filter(({ n }) => !HIDD
 const consented = visible.find(({ p }) => p.show_photo && p.photo_url) as { p: SeedPlayer; n: number };
 const plain = visible.find(({ p }) => !p.show_photo) as { p: SeedPlayer; n: number };
 const OUT = path.resolve(import.meta.dirname, '..', '..', 'screenshots');
-const initialsOf = (name: string) => {
-  const w = name.trim().split(/\s+/);
-  return (w[0][0] + w[w.length - 1][0]).toUpperCase();
-};
 
 for (const file of ['placeholder-player.svg', 'placeholder-crest.svg']) {
   test(`ASSET-5 [e2e] /img/${file} is served as an SVG that the browser can draw, and it is cacheable`, async ({ page, request }) => {
@@ -57,27 +53,24 @@ test('ASSET-5 [e2e] the favicon is the crest SVG from src/app/icon.svg', async (
   await page.screenshot({ path: path.join(OUT, 'svg-icon-320.png') });
 });
 
-test('ASSET-6 [e2e] a consented player shows the local jersey image (it loads, no photo) with the shirt number', async ({ page }) => {
+test('ASSET-6 [e2e] a consented player whose stored path is not a valid local photo shows no image: the shirt number is the graphic', async ({ page }) => {
+  // 20e-3: the seed's photo_url is an .svg, which the /img/ photo rule (jpg, jpeg, png, webp) rejects, so no <img> is drawn
   await page.goto(`/players/${seedId('player', consented.n)}`);
-  const img = page.getByTestId('player-photo');
-  await expect(img).toHaveCount(1);
-  await expect(img).toHaveAttribute('src', '/img/placeholder-player.svg');
-  const loaded = await img.evaluate((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0);
-  expect(loaded, 'the image loaded (no broken image)').toBe(true);
-  expect(await img.getAttribute('alt'), 'decorative: the name is in the heading').toBe('');
-  await expect(page.locator('.avatar .avatar-number')).toHaveText(String(consented.p.shirt_number));
-  await expect(page.getByTestId('player-avatar')).toHaveCount(0); // one or the other, never both
+  await expect(page.getByTestId('player-photo')).toHaveCount(0);
+  expect(await page.locator('[data-testid="page-player"] img').count(), '<img> on the page').toBe(0);
+  const avatar = page.getByTestId('player-avatar');
+  await expect(avatar).toHaveCount(1);
+  await expect(avatar).toHaveText(String(consented.p.shirt_number));
   fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: path.join(OUT, 'avatar-consented-390.png'), fullPage: true });
 });
 
-test('ASSET-6 [e2e] a player who did not consent shows the initials avatar: initials and shirt number, no image', async ({ page }) => {
+test('ASSET-6 [e2e] a player who did not consent shows the shirt number as the graphic, no image', async ({ page }) => {
   await page.goto(`/players/${seedId('player', plain.n)}`);
   await expect(page.getByTestId('player-photo')).toHaveCount(0);
   const avatar = page.getByTestId('player-avatar');
   await expect(avatar).toHaveCount(1);
-  await expect(avatar.locator('.avatar-initials')).toHaveText(initialsOf(plain.p.full_name));
-  await expect(avatar.locator('.avatar-number')).toHaveText(String(plain.p.shirt_number));
+  await expect(avatar).toHaveText(String(plain.p.shirt_number));
   expect(await avatar.locator('img').count()).toBe(0);
   await expect(page.getByTestId('player-name')).toHaveText(plain.p.full_name); // the name stays in the heading
   fs.mkdirSync(OUT, { recursive: true });
@@ -118,22 +111,18 @@ test('ASSET-8 [e2e] the squad badge is a chip with the shirt number (no image), 
   }
 });
 
-test('ASSET-9 [e2e] the number and initials on the jersey are readable (at least 4.5:1 against the jersey colour)', async ({ page }) => {
+test('ASSET-9 [e2e] the shirt number on the player panel is readable (at least 4.5:1 against both navies)', async ({ page }) => {
   await page.goto(`/players/${seedId('player', plain.n)}`);
-  const ratio = await page.getByTestId('player-avatar').evaluate((el) => {
+  const ratio = await page.locator('.player-panel .player-number').evaluate((el) => {
     const parse = (c: string) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
     const lum = ([r, g, b]: number[]) => {
       const f = (v: number) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
       return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
     };
-    const fill = parse(getComputedStyle(el.querySelector('.jersey-fill') as Element).fill);
-    const out: number[] = [];
-    for (const sel of ['.avatar-initials', '.avatar-number']) {
-      const text = parse(getComputedStyle(el.querySelector(sel) as Element).color);
-      const [hi, lo] = [lum(fill), lum(text)].sort((a, b) => b - a);
-      out.push((hi + 0.05) / (lo + 0.05));
-    }
-    return Math.min(...out);
+    const root = getComputedStyle(document.documentElement);
+    const navy = (n: string) => { const v = parseInt(root.getPropertyValue(n).trim().slice(1), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+    const text = parse(getComputedStyle(el).color);
+    return Math.min(...['--primary', '--primary-deep'].map((n) => { const [hi, lo] = [lum(navy(n)), lum(text)].sort((a, b) => b - a); return (hi + 0.05) / (lo + 0.05); }));
   });
   expect(ratio).toBeGreaterThanOrEqual(4.5);
 });

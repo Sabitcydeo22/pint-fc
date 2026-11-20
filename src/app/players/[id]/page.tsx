@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PlayerAvatar from '../../../components/PlayerAvatar';
+import { playerPhotoSrc } from '../../../lib/photo';
 import { POSITION_SINGULAR } from '../../squad/labels';
 import { loadProfile } from './data';
 
@@ -22,15 +23,19 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           ← Back to squad
         </Link>
       </p>
-      <PlayerAvatar name={player.name} shirtNumber={player.shirt_number} photo={Boolean(player.photo_url)} />
-      <div className="stack-xs">
-        <h1 data-testid="player-name">{player.name}</h1>
-        <p data-testid="player-position">{POSITION_SINGULAR[player.position]}</p>
-        <p data-testid="player-number">
-          Shirt number <strong>{player.shirt_number}</strong>
-        </p>
-        {player.nationality ? <p data-testid="player-nationality">Nationality: {player.nationality}</p> : null}
-      </div>
+      <section className="player-panel" data-testid="player-panel" aria-labelledby="player-name">
+        <div className="player-panel-text stack-xs">
+          <p data-testid="player-position" className="player-position">
+            {POSITION_SINGULAR[player.position]}
+          </p>
+          <h1 id="player-name" data-testid="player-name">
+            {player.name}
+          </h1>
+          <p className="sr-only">Shirt number {player.shirt_number}</p>
+          {player.nationality ? <p data-testid="player-nationality">Nationality: {player.nationality}</p> : null}
+        </div>
+        <PlayerAvatar shirtNumber={player.shirt_number} photoSrc={playerPhotoSrc(player.photo_url)} />
+      </section>
       {stats ? (
         <section aria-labelledby="player-stats-title" className="card stack-sm">
           <h2 id="player-stats-title">Season stats</h2>

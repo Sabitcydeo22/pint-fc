@@ -81,7 +81,9 @@ test('AC-4.2.2 [e2e] photo, nationality and stats appear only when consented', a
 
   await page.goto(`/players/${idOf((everything as { n: number }).n)}`);
   await expect(page.getByTestId('page-player')).toBeVisible();
-  await expect(page.getByTestId('player-photo')).toHaveCount(1);
+  // 20e-3: the seed's photo_url is an .svg, not a valid local photo (jpg, jpeg, png, webp), so the number graphic shows, no image
+  await expect(page.getByTestId('player-avatar')).toHaveCount(1);
+  await expect(page.getByTestId('player-photo')).toHaveCount(0);
   await expect(page.getByTestId('player-nationality')).toContainText((everything as { p: SeedPlayer }).p.nationality as string);
   await expect(page.getByTestId('player-stats')).toBeVisible();
 

@@ -255,7 +255,7 @@ describe('D-1 desktop width (session 20d)', () => {
 describe('DESIGN-6 one accent colour, used in a named list of places (relaxed in session 20e-1, owner answer 3)', () => {
   // Still ONE colour (--accent). It may appear on: the hero action (.btn-accent), the current nav link edge, the card top edge
   // and the hero kicker. Any other rule using it fails this test, so a new place needs a new entry here on purpose.
-  const ACCENT_PLACES = ['.btn-accent', '.card', '.hero-kicker'];
+  const ACCENT_PLACES = ['.btn-accent', '.card', '.hero-kicker', '.squad-card']; // .squad-card: 4 px+ edge only (20e-3)
   const ACCENT_PLACE_PREFIXES = ['.nav-link[aria-current']; // session 20e-2
   it('DESIGN-6 [unit] the accent colour is used only by the named places', () => {
     const users = [...cssOutsideRoot.matchAll(/([^{}]+)\{([^{}]*)\}/g)]

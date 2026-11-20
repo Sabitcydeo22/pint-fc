@@ -35,12 +35,12 @@ const overflow = (page: Page) => page.evaluate(() => Math.max(0, document.docume
 
 // ---------- squad ----------
 for (const width of [320, 390]) {
-  test(`POL-1 [e2e] the shirt number is a rounded chip beside the name and two digits are not clipped at ${width} px`, async ({ page }) => {
+  test(`POL-1 [e2e] the shirt number is beside the name, inside its card, and two digits are not clipped at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/squad');
     await expect(page.getByTestId('squad-player').first()).toBeVisible();
     const r = await page.evaluate(() => {
-      const out = { cards: 0, noChip: 0, notPill: 0, notBeside: 0, outside: 0, clipped: 0, twoDigit: 0, filled: 0 };
+      const out = { cards: 0, noChip: 0, notBeside: 0, outside: 0, clipped: 0, twoDigit: 0 };
       for (const card of Array.from(document.querySelectorAll<HTMLElement>('[data-testid="squad-player"]'))) {
         out.cards++;
         const chip = card.querySelector<HTMLElement>('.squad-badge');
@@ -49,9 +49,6 @@ for (const width of [320, 390]) {
         const c = chip.getBoundingClientRect();
         const n = name.getBoundingClientRect();
         const k = card.getBoundingClientRect();
-        const cs = getComputedStyle(chip);
-        const radius = parseFloat(cs.borderTopLeftRadius);
-        if (!(radius >= Math.min(c.width, c.height) / 2 - 0.5)) out.notPill++;
         if (!(c.right <= n.left + 0.5 && Math.abs(c.top + c.height / 2 - (n.top + n.height / 2)) <= c.height)) out.notBeside++;
         if (c.left < k.left - 0.5 || c.right > k.right + 0.5 || c.top < k.top - 0.5 || c.bottom > k.bottom + 0.5) out.outside++;
         if (chip.scrollWidth > chip.clientWidth + 0.5) out.clipped++;
@@ -62,18 +59,15 @@ for (const width of [320, 390]) {
           const t = range.getBoundingClientRect();
           if (t.width > c.width - 0.5 || range.getClientRects().length > 1) out.clipped++;
         }
-        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)') out.filled++;
       }
       return out;
     });
     expect(r.cards, 'cards').toBe(37);
     expect(r.noChip, 'cards without a chip').toBe(0);
-    expect(r.notPill, 'chips that are not rounded').toBe(0);
     expect(r.notBeside, 'chips not beside the name').toBe(0);
     expect(r.outside, 'chips outside their card').toBe(0);
     expect(r.twoDigit, 'two-digit numbers on the page').toBeGreaterThan(0);
     expect(r.clipped, 'clipped numbers').toBe(0);
-    expect(r.filled, 'chips with a fill').toBe(37);
   });
 }
 

@@ -557,6 +557,71 @@ a {
   font-size: var(--text-2xl);
 }
 
+/* player page identity panel (session 20e-3): the hero's navy band with the name, the position and a big number */
+.player-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius);
+  background-color: var(--primary);
+  background-image: linear-gradient(115deg, var(--primary) 0 60%, var(--primary-deep) 60% 100%);
+  color: var(--on-fill);
+  box-shadow: var(--shadow-card);
+}
+.player-panel-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.player-panel h1,
+.player-panel p {
+  margin: 0;
+}
+.player-panel h1 {
+  font-size: var(--text-2xl);
+  line-height: 1.15;
+}
+.player-position {
+  color: var(--on-dark-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.player-media {
+  position: relative;
+  flex: none;
+}
+.player-number {
+  display: grid;
+  place-items: center;
+  min-width: 6rem;
+  height: 6rem;
+  border: 3px solid var(--on-fill);
+  border-radius: var(--radius-pill);
+  color: var(--on-fill);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+.player-photo {
+  display: block;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+.player-number-chip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  min-width: 3rem;
+  height: 3rem;
+  background: var(--primary-deep);
+  font-size: var(--text-xl);
+}
+
 /* chips: the RSVP status */
 .chip {
   display: inline-block;
@@ -679,29 +744,33 @@ a {
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
+  min-height: 5rem;
+  padding: var(--space-3) var(--space-3);
+  border-left: 6px solid var(--accent);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   text-decoration: none;
 }
-/* the shirt number: a rounded chip beside the name; it grows with its digits, so two digits never clip */
+/* the shirt number: big, navy, centred in a fixed-width column so the names line up; two digits fit */
 .squad-badge {
-  display: inline-flex;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  height: 32px;
-  padding: 0 var(--space-2);
-  border: 2px solid var(--primary);
-  border-radius: var(--radius-pill);
-  background: var(--bg);
+  min-width: 2.5rem;
   color: var(--primary);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  text-align: center;
+}
+.squad-info {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.squad-position {
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
 /* a long name wraps to at most two lines */
 .squad-name {

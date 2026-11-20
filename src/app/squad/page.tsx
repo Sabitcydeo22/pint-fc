@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getSquad } from '../../server/squad';
-import { POSITION_GROUPS } from './labels';
+import { POSITION_GROUPS, POSITION_SINGULAR } from './labels';
 
 export const metadata = { title: 'Squad — PINT FC' };
 
@@ -25,8 +25,11 @@ export default async function SquadPage() {
                   <li key={p.id}>
                     <Link href={`/players/${p.id}`} data-testid="squad-player" className="squad-card">
                       <span className="squad-badge">{p.shirt_number}</span>
-                      <span className="squad-name" title={p.name}>
-                        {p.name}
+                      <span className="squad-info">
+                        <span className="squad-name" title={p.name}>
+                          {p.name}
+                        </span>
+                        <span className="squad-position">{POSITION_SINGULAR[p.position]}</span>
                       </span>
                     </Link>
                   </li>
