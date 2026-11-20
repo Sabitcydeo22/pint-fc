@@ -77,7 +77,9 @@ const gaps = (page: Page, mainTestId: string) =>
     for (const group of groups) {
       const rects = group.map((e) => e.getBoundingClientRect()).filter((r) => r.height > 0);
       count += rects.length;
-      out.push(...rects.slice(1).map((r, i) => Math.round((r.top - rects[i].bottom) * 100) / 100));
+      // a visually-hidden element (.sr-only, session 20e-2) is out of the flow: it is counted but has no gap
+      const flow = group.filter((e) => !e.classList.contains('sr-only')).map((e) => e.getBoundingClientRect()).filter((r) => r.height > 0);
+      out.push(...flow.slice(1).map((r, i) => Math.round((r.top - flow[i].bottom) * 100) / 100));
     }
     return { count: count - wrappers, columns: groups.length - 1, gaps: out };
   }, mainTestId);

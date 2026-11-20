@@ -856,3 +856,22 @@
 
 **Next session needs to know**
 - 20e-2: squad badge and equal cards, header links and account menu (`.nav-link[aria-current…]` is already allowed by DESIGN-6). New styled files join `TSX_FILES`. `auth.spec.ts` and D-6 touch the header controls.
+
+## session-20e-2 — squad chip, header account menu, hero fixes (2026-11-20)
+
+**STATUS: DONE, not committed (waiting for the owner's "go").** Decisions D-178 to D-181. No install, nothing deleted, nothing pushed, no deploy.
+
+**Done**
+- Squad: number chip beside the name (two digits fit), equal-height cards, names wrap to two lines. Header: no underline, `name ▾` account menu (My settings, Sign out, Sign out of all devices). Hero: h1 visually hidden (kept for screen readers), "RSVP closes … EST" no longer orphans the zone. Files: `globals.css`, `Header.tsx`, `squad/page.tsx`, `page.tsx`, `NextMatch.tsx`; new tests `tests/unit/header-menu.test.ts`, `tests/e2e/polish-20e2.spec.ts`; five existing specs edited with the owner's yes (D-181).
+
+**Proof**
+- RED first (assertion failures, old code): unit 4 of 6 (`a button with data-testid="account-trigger": expected null not to be null`, and so on); e2e POL-1 `chips that are not rounded Expected 0, Received 37`, POL-2 `Received 4`, POL-3 (underlined links), POL-7 `visual width Expected <= 1 Received 1152`, POL-10 at 390 px `the last line is only "EST"`; POL-4, POL-4b and POL-5 failed because `account-trigger` did not exist (not found, no plain assertion). POL-6, POL-8, POL-9, POL-11 and POL-10 at 320/360 px passed on the old code: guards. First POL-10 was a test bug (read one text node) and was fixed before the RED was shown.
+- Mutations (SHA-256 and `fc /b` identical after every restore): hero muted text set to grey → POL-8 and POL-9 (1.86:1); sign-out calls a wrong endpoint → POL-6 (both); chip `min-width: 500px` → POL-11 (3 widths); `.sr-only` as `display: none` → POL-7. Not mutated: POL-10 at 320/360 px (no wrap there either way).
+- Exit gate `npm run gate`, exit 0: typecheck and lint 0; unit 19 files / 145; db 16 / 72; api 11 / 59; e2e 266 passed; `plan-check OK: 19 sessions, 40 checks`; `ALL 7 GATES PASSED`. Before the five spec edits the full e2e run had 14 failures, all from the moved sign-out items, the hidden h1 and the chip.
+
+**Known gaps and UNKNOWN**
+- UNKNOWN: which grey hero text the owner meant (all hero text passes AA). Renders are in `screenshots/*-20e2-*.png` (squad and home at 390/768/1280, header closed and open at 1280, drawer at 390); I did not look at them yet.
+- The ▾ button is a disclosure, not an ARIA menu (D-178). The mutation backups are in the system temp folder `m20e2`; the agent may not delete them.
+
+**Next session needs to know**
+- 20e-3 (the rest of 20e: results rows, footer, player page layout) is next; plan first. Header controls now live in `account-trigger` / `account-panel`; use them in any new test.

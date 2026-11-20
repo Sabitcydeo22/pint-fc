@@ -64,8 +64,9 @@ for (const width of [320, 390, 768, 1280]) {
     }
     const hero = await box(page, HERO);
     const record = await box(page, SECTION.record);
-    const h1 = await box(page, 'h1');
-    expect(hero.y, 'the band comes right after the page title').toBeGreaterThanOrEqual(h1.bottom);
+    // the page title is visually hidden since 20e-2 (a 1 px box): the band is the first thing in the page column
+    const main = await box(page, '[data-testid="page-home"]');
+    expect(hero.y, 'the band is at the top of the page column').toBeCloseTo(main.y, 0);
     expect(record.y, 'the record is below the band').toBeGreaterThanOrEqual(hero.bottom);
     expect(hero.height, 'a large band').toBeGreaterThanOrEqual(240);
     const content = await page.evaluate(() => {

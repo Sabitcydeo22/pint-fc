@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import Crest from './Crest';
 
 /** The player shown in the account menu, or null for a visitor. The layout resolves it on the server. */
@@ -21,12 +21,42 @@ async function post(path: string): Promise<void> {
 
 export default function Header({ player }: { player: HeaderPlayer | null }) {
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const panelId = useId();
+  const accountPanelId = useId();
+  const accountRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const run = (path: string) => {
     setBusy(true);
     void post(path);
+  };
+
+  // a click or tap outside the account menu closes it
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+    };
+  }, [accountOpen]);
+
+  // Escape closes the menu and puts the focus back on the button
+  const onAccountKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape' && accountOpen) {
+      setAccountOpen(false);
+      triggerRef.current?.focus();
+    }
+  };
+  // tabbing out of the menu closes it
+  const onAccountBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) setAccountOpen(false);
   };
 
   return (
@@ -54,17 +84,32 @@ export default function Header({ player }: { player: HeaderPlayer | null }) {
             Squad
           </Link>
           {player ? (
-            <div className="account-menu" data-testid="account-menu">
-              <span className="account-name">{player.displayName}</span>
-              <Link href="/settings" className="nav-link">
-                My settings
-              </Link>
-              <button type="button" className="header-btn" data-testid="sign-out-button" disabled={busy} onClick={() => run('/api/auth/sign-out')}>
-                Sign out
+            <div className="account-menu" data-testid="account-menu" ref={accountRef} onKeyDown={onAccountKeyDown} onBlur={onAccountBlur}>
+              <button
+                type="button"
+                className="header-btn account-trigger"
+                data-testid="account-trigger"
+                ref={triggerRef}
+                aria-expanded={accountOpen}
+                aria-controls={accountPanelId}
+                onClick={() => setAccountOpen((v) => !v)}
+              >
+                <span className="account-name">{player.displayName}</span>
+                <span aria-hidden="true"> ▾</span>
               </button>
-              <button type="button" className="header-btn" data-testid="sign-out-all-button" disabled={busy} onClick={() => run('/api/auth/sign-out-all')}>
-                Sign out of all devices
-              </button>
+              {accountOpen ? (
+                <div id={accountPanelId} className="account-panel" data-testid="account-panel">
+                  <Link href="/settings" className="menu-item" data-testid="settings-link">
+                    My settings
+                  </Link>
+                  <button type="button" className="menu-item" data-testid="sign-out-button" disabled={busy} onClick={() => run('/api/auth/sign-out')}>
+                    Sign out
+                  </button>
+                  <button type="button" className="menu-item" data-testid="sign-out-all-button" disabled={busy} onClick={() => run('/api/auth/sign-out-all')}>
+                    Sign out of all devices
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <Link href="/sign-in" className="nav-link" data-testid="sign-in-link">

@@ -11,6 +11,7 @@ const apiStatus = async (page: Page, path: string, method: 'GET' | 'POST' = 'GET
 /** Presses a sign-out button and waits for the full page load that follows (the old page's account menu disappears). */
 async function pressSignOut(page: Page, testId: 'sign-out-button' | 'sign-out-all-button'): Promise<void> {
   await openMenuIfCollapsed(page);
+  await page.getByTestId('account-trigger').click(); // the sign-out items are inside the account menu (20e-2)
   await page.getByTestId(testId).click();
   await expect(page.getByTestId('account-menu')).toHaveCount(0);
   await expect(page.getByTestId('page-home')).toBeVisible();
@@ -144,6 +145,7 @@ test('SHELL-1 [e2e] header shows sign-in link when signed out and account menu w
   await signInThroughForm(page, 'one');
   await expect(page.getByTestId('account-menu')).toBeVisible();
   await expect(page.getByTestId('sign-in-link')).toHaveCount(0);
+  await page.getByTestId('account-trigger').click(); // the sign-out items are inside the account menu (20e-2)
   await expect(page.getByTestId('sign-out-button')).toBeVisible();
   await expect(page.getByTestId('sign-out-all-button')).toBeVisible();
 

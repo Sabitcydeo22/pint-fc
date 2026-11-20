@@ -101,7 +101,7 @@ test('ASSET-7 [e2e] pages load no image from another site, no image answers an e
   expect(failed, 'image requests with an error status').toEqual([]);
 });
 
-test('ASSET-8 [e2e] the squad badge is a jersey with the shirt number, and the header and footer show the crest SVG', async ({ page }) => {
+test('ASSET-8 [e2e] the squad badge is a chip with the shirt number (no image), and the header and footer show the crest SVG', async ({ page }) => {
   await page.goto('/squad');
   const cards = page.getByTestId('squad-player');
   await expect(cards).toHaveCount(37);
@@ -109,7 +109,7 @@ test('ASSET-8 [e2e] the squad badge is a jersey with the shirt number, and the h
   const badge = first.locator('.squad-badge');
   await expect(badge).toHaveCount(1);
   expect(((await badge.textContent()) ?? '').trim()).toMatch(/^\d{1,2}$/);
-  expect(await badge.locator('svg[aria-hidden="true"]').count(), 'a decorative jersey shape').toBe(1);
+  expect(await badge.locator('svg, img').count(), 'a plain number chip (20e-2): no jersey shape inside').toBe(0);
   expect(await page.locator('[data-testid="squad-player"] img').count()).toBe(0);
   for (const where of ['site-header', 'site-footer']) {
     const crest = page.getByTestId(where).locator('svg.crest');

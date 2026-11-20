@@ -166,11 +166,11 @@ test('D-6 [e2e] header at 1280 px is as wide as the page, on one row, and lines 
   expect(bar.width, 'header bar width').toBeLessThanOrEqual(1200);
   await expect(page.getByTestId('nav-toggle')).toBeHidden();
   const centres = [];
-  for (const sel of ['.brand', '.nav-panel a.nav-link', '[data-testid="sign-out-button"]', '[data-testid="sign-out-all-button"]']) {
+  for (const sel of ['.brand', '.nav-panel a.nav-link', '[data-testid="account-trigger"]']) {
     const b = await box(page, sel);
     centres.push(Math.round(b.y + b.height / 2));
   }
-  expect(Math.max(...centres) - Math.min(...centres), 'brand, links and buttons share one row').toBeLessThanOrEqual(2);
+  expect(Math.max(...centres) - Math.min(...centres), 'brand, links and the account button share one row').toBeLessThanOrEqual(2);
   const h1 = await box(page, 'h1');
   expect((await box(page, '.brand')).x, 'brand left edge = content left edge').toBeCloseTo(h1.x, 0);
   expect((await box(page, '.footer-inner .footer-brand')).x, 'footer left edge = content left edge').toBeCloseTo(h1.x, 0);

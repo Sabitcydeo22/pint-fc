@@ -171,7 +171,7 @@ function NextMatchCard({ match, serverNow }: { match: NextMatchRow; serverNow: s
             {open ? 'Open' : 'RSVP closed'}
           </span>{' '}
           <span className="muted" data-testid="rsvp-cutoff">
-            RSVP {open ? 'closes' : 'closed'} {formatKickoff(match.cutoff_at)}
+            RSVP {open ? 'closes' : 'closed'} <span className="nowrap">{formatKickoff(match.cutoff_at)}</span>
           </span>
         </p>
 
